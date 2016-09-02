@@ -4,7 +4,7 @@ Fuzzing Android program with [american fuzzy lop (AFL)][american-fuzzy-lop]
 
 ## android-afl: Android-enabled version of AFL
 
-android-afl is a modified version of AFL that supports fuzzing on Android, the SHM has been replaced with ASHMEM because of Android disable SHM in the kernel. Extra codes have been added in afl-gcc.c, afl-as.c and afl-as.h to support arm arch. Android.mk has been added to support Android build system and llvm_mode, Please refer to the [android-afl.patch][android-afl.patch] for more details.
+android-afl is a modified version of AFL that supports fuzzing on Android, the SHM has been replaced with ASHMEM because of Android disable SHM in the kernel. Extra codes have been added in afl-gcc.c, afl-as.c and afl-as.h to support arm arch. Android.mk has been added to support Android build system and llvm_mode. Please refer to the [android-afl.patch][android-afl.patch] for more details.
 
 ## Requirements
 * Android source code(e.g. 6.0.1) is needed.
