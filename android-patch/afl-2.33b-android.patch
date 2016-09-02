@@ -1,0 +1,735 @@
+diff -urN a/afl-2.33b/afl-analyze.c b/afl-2.33b/afl-analyze.c
+--- a/afl-2.33b/afl-analyze.c	2016-08-04 01:52:58.000000000 +0800
++++ b/afl-2.33b/afl-analyze.c	2016-08-30 14:49:18.336193640 +0800
+@@ -21,6 +21,10 @@
+ 
+ #define AFL_MAIN
+ 
++#ifdef __ANDROID__
++   #include "android-ashmem.h"
++#endif
++
+ #include "config.h"
+ #include "types.h"
+ #include "debug.h"
+diff -urN a/afl-2.33b/afl-as.c b/afl-2.33b/afl-as.c
+--- a/afl-2.33b/afl-as.c	2016-02-10 23:53:12.000000000 +0800
++++ b/afl-2.33b/afl-as.c	2016-09-01 13:45:20.163997365 +0800
+@@ -212,6 +212,111 @@
+ }
+ 
+ 
++static void add_instrumentation_arm(void)
++{
++  static u8 line[MAX_LINE];
++
++  FILE *inf, *outf;
++  s32 outfd;
++  u32 ins_lines = 0;
++  u8 instr_ok = 0, instrument_next = 0;
++  u8 *ptr, *reg;
++
++  if (input_file) {
++    inf = fopen(input_file, "r");
++    if (!inf) {
++      PFATAL("Unable to read '%s'", input_file);
++    }
++  }
++  else {
++    inf = stdin;
++  }
++
++  outfd = open(modified_file, O_WRONLY | O_EXCL | O_CREAT, 0600);
++  if (outfd < 0) {
++    PFATAL("Unable to write to '%s'", modified_file);
++  }
++  outf = fdopen(outfd, "w");
++  if (!outf) {
++    PFATAL("fdopen() failed");
++  }
++
++  while (fgets(line, MAX_LINE, inf)) {
++    if (instrument_next) {
++        if (strncmp(line, "\t.word", 6) && strncmp(line, "\t.byte", 6) && strncmp(line, "\t.2byte", 7) && strncmp(line, "\tb\t", 3)) {
++          fprintf(outf, trampoline_fmt_arm, R(MAP_SIZE));
++          ++ins_lines;
++        }
++      instrument_next = 0;
++    }
++
++    if (instr_ok && !strncmp(line, "\tldr", 4) && (ptr = strstr(line, ", .L"))) {
++      reg = strchr(line + 4, '\t');
++      ptr[0] = '\0';
++
++      fprintf(outf, "%s, =%s", line, ptr + 2);
++      fprintf(outf, "%s, [%s]\n", line, reg + 1);
++
++      continue;
++    }
++
++    if (instr_ok &&
++        ((!strncmp(line, "\tfldd", 5) || !strncmp(line, "\tvldr", 5)) && (ptr = strstr(line, ", .L")))) {
++      ptr[0] = 0;
++
++      fprintf(outf, "\tpush {r12}\n");
++      fprintf(outf, "\tldr r12, =%s", ptr + 2);
++      fprintf(outf, "%s, [r12]\n", line);
++      fprintf(outf, "\tpop {r12}\n");
++
++      continue;
++
++    }
++
++    fputs(line, outf);
++
++    if (!strncmp(line, "\t.fnstart", 9)) {
++      instr_ok = 1;
++      instrument_next = 1;
++      continue;
++    }
++
++    if (!strncmp(line, "\t.fnend", 7)) {
++      instr_ok = 0;
++      continue;
++    }
++
++    if (instr_ok) {
++      if (!strncmp(line, ".L", 2) && isdigit(line[2])) {
++        instrument_next = 1;
++      }
++      else if (line[0] == '\t' && line[1] == 'b' && strncmp(line, "\tbic", 4) && strncmp(line, "\tb\t", 3) && strncmp(line, "\tbl\t", 4) && strncmp(line, "\tblx\t", 5)) {
++        instrument_next = 1;
++      }
++    }    
++  }
++
++  if (ins_lines) {
++    fputs(main_payload_arm, outf);
++  }
++
++  if (input_file) {
++    fclose(inf);
++  }
++
++  fclose(outf);
++
++  if (!be_quiet) {
++
++    if (!ins_lines) WARNF("No instrumentation targets found%s.",
++                          pass_thru ? " (pass-thru mode)" : "");
++    else OKF("Instrumented %u locations (%s-bit, arm mode, ratio %u%%).",
++             ins_lines, getenv("AFL_HARDEN") ? "hardened" : "non-hardened",
++             inst_ratio);
++  }
++}
++
++
+ /* Process input file, generate modified_file. Insert instrumentation in all
+    the appropriate places. */
+ 
+@@ -523,7 +628,14 @@
+ 
+   if (getenv("AFL_USE_ASAN") || getenv("AFL_USE_MSAN")) inst_ratio /= 3;
+ 
+-  if (!just_version) add_instrumentation();
++  if (!just_version) {
++    if (getenv("AFL_USE_ARM")) {
++      add_instrumentation_arm();
++    }
++    else {
++      add_instrumentation();
++    }
++  }
+ 
+   if (!(pid = fork())) {
+ 
+diff -urN a/afl-2.33b/afl-as.h b/afl-2.33b/afl-as.h
+--- a/afl-2.33b/afl-as.h	2016-07-05 04:08:29.000000000 +0800
++++ b/afl-2.33b/afl-as.h	2016-09-01 13:45:47.783997243 +0800
+@@ -104,6 +104,172 @@
+ 
+  */
+ 
++static const u8 *trampoline_fmt_arm = 
++  "\n"
++  "/* --- AFL TRAMPOLINE --- */\n"
++  "\tpush {r0, lr}\n"
++  "\tmovw r0, #%u\n"
++ "\tbl __afl_maybe_log\n"
++  "\tb 1f\n"
++  "\t.ltorg\n"
++  "\t1:\n"
++  "\tpop {r0, lr}\n"
++  "/* --- END --- */\n"
++  "\n";
++
++static const u8 *main_payload_arm =
++  "\n"
++  "/* --- AFL MAIN PAYLOAD --- */\n"
++  "\n"
++  ".text\n"
++  "__afl_maybe_log:\n"
++  "\n"
++  "\n"
++  "\tpush {r1-r7, lr}\n"
++  "\tmrs r7, APSR\n"
++  "\tmov r4, r0\n"
++  "\tldr r0, =__afl_setup_failure\n"
++  "\tldr r0, [r0]\n"
++  "\tcmp r0, #0\n"
++  "\tbne __afl_return\n"
++  "\n"
++  "\tldr r0, =__afl_area_ptr\n"
++  "\tldr r0, [r0]\n"
++  "\tcmp r0, #0\n"
++  "\tbne __afl_store\n"
++  "\n"
++  "\tldr r0, =.AFL_SHM_ENV\n"
++  "\tbl getenv\n"
++  "\n"
++  "\tcmp r0, #0\n"
++  "\tbeq __afl_setup_abort\n"
++  "\n"
++  "\tbl atoi\n"
++  "\n"
++  "\tmov r5, r0\n"
++  "\tldr r1, =#0x7704\n"
++  "\tmov r2, #0\n"
++  "\tbl ioctl\n"
++  "\n"
++  "\tcmp r0, #0\n"
++  "\tblt __afl_setup_abort\n"
++  "\n"
++  "\tmov r1, r0\n"
++  "\tmov r0, #0\n"
++  "\tmov r2, #3\n"
++  "\tmov r3, #1\n"
++  "\tmov r6, #0\n"
++  "\tpush {r5, r6}\n"
++  "\tbl mmap\n"
++  "\tpop {r5, r6}\n"
++  "\n"
++  "\tadd r1, r0, #1\n"
++  "\tcmp r1, #1\n"
++  "\tbhi __afl_forkserver\n"
++  "\n"
++  "__afl_setup_abort:\n"
++  "\tldr r0, =__afl_setup_failure\n"
++  "\tldr r1, [r0]\n"
++  "\tadd r1, r1, #1\n"
++  "\tstr r1, [r0]\n"
++  "\tb __afl_return\n"
++  "\n"
++  "\t__afl_forkserver:\n"
++  "\tldr r1, =__afl_area_ptr\n"
++  "\tstr r0, [r1]\n"
++  "\tldr r5, =__afl_temp\n"
++  "\tmov r0, #" STRINGIFY(FORKSRV_FD + 1) "\n"
++  "\tmov r1, r5\n"
++  "\tmov r2, #4\n"
++  "\tbl write\n"
++  "\n"
++  "\tcmp r0, #4\n"
++  "\tbne __afl_store\n"
++  "\n"
++  "\t__afl_fork_wait_loop:\n"
++  "\tmov r0, #" STRINGIFY(FORKSRV_FD) "\n"
++  "\tmov r1, r5\n"
++  "\tmov r2, #4\n"
++  "\tbl read\n"
++  "\n"
++  "\tcmp r0, #4\n"
++  "\tbne __afl_die\n"
++  "\n"
++  "\tbl fork\n"
++  // "\n"
++  "\tcmp r0, #0\n"
++  "\tblt __afl_die\n"
++  "\n"
++  "\tbeq __afl_fork_resume\n"
++  "\n"
++  "\tldr r1, =__afl_fork_pid\n"
++  "\tstr r0, [r1]\n"
++  "\tmov r6, r0\n"
++  "\tmov r0, #" STRINGIFY(FORKSRV_FD + 1) "\n"
++  "\tmov r2, #4\n"
++  "\tbl write\n"
++  "\n"
++  "\tcmp r0, #4\n"
++  "\tbne __afl_die\n"
++  "\n"
++  "\tmov r0, r6\n"
++  "\tmov r1, r5\n"
++  "\tmov r2, #0\n"
++  "\tbl waitpid\n"
++  "\n"
++  "\tcmp r0, #0\n"
++  "\tblt __afl_die\n"
++  "\tmov r0, #" STRINGIFY(FORKSRV_FD + 1) "\n"
++  "\tmov r1, r5\n"
++  "\tmov r2, #4\n"
++  "\tbl write\n"
++  "\n"
++  "\tcmp r0, #4\n"
++  "\tbeq __afl_fork_wait_loop\n"
++  "\n"
++  "\tb __afl_die\n"
++  "\n"
++  "__afl_fork_resume:\n"
++  "\tmov r0, #" STRINGIFY(FORKSRV_FD) "\n"
++  "\tbl close\n"
++  "\n"
++  "\tmov r0, #" STRINGIFY(FORKSRV_FD + 1) "\n"
++  "\tbl close\n"
++  "\n"
++  "__afl_store:\n"
++  "\tldr r0, =__afl_area_ptr\n"
++  "\tldr r0, [r0]\n"
++  "\tldr r1, =__afl_prev_loc\n"
++  "\tldr r2, [r1]\n"
++  "\teor r2, r2, r4\n"
++  "\tldrb r3, [r0, r2]\n"
++  "\tadd r3, r3, #1\n"
++  "\tstrb r3, [r0, r2]\n"
++  "\tmov r0, r4, asr#1\n"
++  "\tstr r0, [r1]\n"
++  "__afl_return:\n"
++  "msr APSR_nzcvq, r7\n"
++  "\tpop {r1-r7, pc}\n"
++  "__afl_die:\n"
++  "\tmov r0, #0\n"
++  "\tbl exit\n"
++  "\n"
++  ".AFL_VARS:\n"
++  "\n"
++  "\t.comm __afl_area_ptr, 4, 4\n"
++  "\t.comm __afl_setup_failure, 4, 4\n"
++// #ifndef COVERAGE_ONLY
++  "\t.comm __afl_prev_loc, 4, 4\n"
++// #endif /* !COVERAGE_ONLY */
++  "\t.comm __afl_fork_pid, 4, 4\n"
++  "\t.comm __afl_temp, 4, 4\n"
++  "\n"
++  ".AFL_SHM_ENV:\n"
++  "\t.string \"" SHM_ENV_VAR "\"\n"
++  "\n"
++  "/* --- END -- */\n"
++  "\n";
++
+ static const u8* trampoline_fmt_32 =
+ 
+   "\n"
+diff -urN a/afl-2.33b/afl-fuzz.c b/afl-2.33b/afl-fuzz.c
+--- a/afl-2.33b/afl-fuzz.c	2016-08-20 14:40:05.000000000 +0800
++++ b/afl-2.33b/afl-fuzz.c	2016-08-31 11:58:28.015527866 +0800
+@@ -26,6 +26,10 @@
+ #define _GNU_SOURCE
+ #define _FILE_OFFSET_BITS 64
+ 
++#ifdef __ANDROID__
++   #include "android-ashmem.h"
++#endif
++
+ #include "config.h"
+ #include "types.h"
+ #include "debug.h"
+@@ -3937,7 +3941,9 @@
+     SAYF(cBRI "Your terminal is too small to display the UI.\n"
+          "Please resize terminal window to at least 80x25.\n" cRST);
+ 
+-    return;
++    #ifndef __ANDROID__
++      return;
++    #endif
+ 
+   }
+ 
+@@ -7805,6 +7811,12 @@
+   if (optind == argc || !in_dir || !out_dir) usage(argv[0]);
+ 
+   setup_signal_handlers();
++  #ifdef ANDROID
++    setenv("ASAN_OPTIONS", "abort_on_error=1:"
++                           "detect_leaks=0:"
++                           "symbolize=0:"
++                           "allocator_may_return_null=1", 1);
++  #endif
+   check_asan_opts();
+ 
+   if (sync_id) fix_up_sync();
+diff -urN a/afl-2.33b/afl-gcc.c b/afl-2.33b/afl-gcc.c
+--- a/afl-2.33b/afl-gcc.c	2016-08-20 14:29:07.000000000 +0800
++++ b/afl-2.33b/afl-gcc.c	2016-09-01 10:23:10.146448945 +0800
+@@ -116,6 +116,8 @@
+   u8 m32_set = 0;
+ #endif
+ 
++  u8 arm_set = 0;
++
+   cc_params = ck_alloc((argc + 128) * sizeof(u8*));
+ 
+   name = strrchr(argv[0], '/');
+@@ -177,9 +179,23 @@
+ 
+   }
+ 
++  if (!strncmp(cc_params[0], "arm", 3)) {
++    arm_set = 1;
++  }
++
+   while (--argc) {
+     u8* cur = *(++argv);
+ 
++    if (!strcmp(cur, "-mthumb")) {
++      arm_set = 1;
++      WARNF("The thumb instrumentation is not supported, we will ingore -mthumb.");
++      continue;
++    }
++
++    if (!strcmp(cur, "-marm")) {
++      arm_set = 1;
++    }
++
+     if (!strncmp(cur, "-B", 2)) {
+ 
+       if (!be_quiet) WARNF("-B is already set, overriding");
+@@ -252,6 +268,13 @@
+ 
+   }
+ 
++  if (arm_set) {
++    setenv("AFL_USE_ARM", "1", 1);
++  }
++  else {
++    unsetenv("AFL_USE_ARM");
++  }
++
+   if (!getenv("AFL_DONT_OPTIMIZE")) {
+ 
+ #if defined(__FreeBSD__) && defined(__x86_64__)
+@@ -323,7 +346,6 @@
+ 
+   }
+ 
+-
+   find_as(argv[0]);
+ 
+   edit_params(argc, argv);
+diff -urN a/afl-2.33b/afl-gotcpu.c b/afl-2.33b/afl-gotcpu.c
+--- a/afl-2.33b/afl-gotcpu.c	2016-04-28 06:31:44.000000000 +0800
++++ b/afl-2.33b/afl-gotcpu.c	2016-08-30 14:49:52.540193982 +0800
+@@ -28,6 +28,10 @@
+ #define AFL_MAIN
+ #define _GNU_SOURCE
+ 
++#ifdef __ANDROID__
++   #include "android-ashmem.h"
++#endif
++
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+diff -urN a/afl-2.33b/afl-showmap.c b/afl-2.33b/afl-showmap.c
+--- a/afl-2.33b/afl-showmap.c	2016-08-04 01:52:48.000000000 +0800
++++ b/afl-2.33b/afl-showmap.c	2016-08-30 14:50:01.904194076 +0800
+@@ -23,6 +23,10 @@
+ 
+ #define AFL_MAIN
+ 
++#ifdef __ANDROID__
++   #include "android-ashmem.h"
++#endif
++
+ #include "config.h"
+ #include "types.h"
+ #include "debug.h"
+diff -urN a/afl-2.33b/afl-tmin.c b/afl-2.33b/afl-tmin.c
+--- a/afl-2.33b/afl-tmin.c	2016-08-04 01:53:28.000000000 +0800
++++ b/afl-2.33b/afl-tmin.c	2016-08-30 14:50:10.028194157 +0800
+@@ -21,6 +21,10 @@
+ 
+ #define AFL_MAIN
+ 
++#ifdef __ANDROID__
++   #include "android-ashmem.h"
++#endif
++
+ #include "config.h"
+ #include "types.h"
+ #include "debug.h"
+diff -urN a/afl-2.33b/android-ashmem.h b/afl-2.33b/android-ashmem.h
+--- a/afl-2.33b/android-ashmem.h	1970-01-01 08:00:00.000000000 +0800
++++ b/afl-2.33b/android-ashmem.h	2016-08-30 11:58:10.027865000 +0800
+@@ -0,0 +1,69 @@
++#ifndef _ANDROID_ASHMEM_H
++#define _ANDROID_ASHMEM_H
++
++#include <fcntl.h>
++#include <linux/ashmem.h>
++#include <sys/shm.h>
++#include <sys/mman.h>
++
++#include <stdio.h>
++
++#define ASHMEM_DEVICE	"/dev/ashmem"
++
++static inline int shmctl(int __shmid, int __cmd, struct shmid_ds *__buf)
++{
++		int ret = 0;
++		if (__cmd == IPC_RMID) {
++			int length = ioctl(__shmid, ASHMEM_GET_SIZE, NULL);
++			struct ashmem_pin pin = {0, length};
++			ret = ioctl(__shmid, ASHMEM_UNPIN, &pin);
++			close(__shmid);
++		}
++
++		return ret;
++}
++
++static inline int shmget (key_t __key, size_t __size, int __shmflg)
++{
++	int fd,ret;
++	char key[11];
++
++	fd = open(ASHMEM_DEVICE, O_RDWR);
++	if (fd < 0)
++		return fd;
++
++	sprintf(key,"%d",__key);
++	ret = ioctl(fd, ASHMEM_SET_NAME, key);
++	if (ret < 0)
++		goto error;
++
++	ret = ioctl(fd, ASHMEM_SET_SIZE, __size);
++	if (ret < 0)
++		goto error;
++
++	return fd;
++
++error:
++	close(fd);
++	return ret;
++}
++
++static inline void *shmat (int __shmid, const void *__shmaddr, int __shmflg)
++{
++  int size;
++  void *ptr;
++  
++  size = ioctl(__shmid, ASHMEM_GET_SIZE, NULL);
++  if (size < 0) {
++    return NULL;
++  }
++
++  ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, __shmid, 0);
++  if (ptr == MAP_FAILED) {
++    return NULL;
++  }
++  
++  return ptr;
++}
++
++#endif
+diff -urN a/afl-2.33b/Android.mk b/afl-2.33b/Android.mk
+--- a/afl-2.33b/Android.mk	1970-01-01 08:00:00.000000000 +0800
++++ b/afl-2.33b/Android.mk	2016-09-01 14:11:18.211990516 +0800
+@@ -0,0 +1,185 @@
++LOCAL_PATH := $(call my-dir)
++
++PROGNAME = afl
++VERSION = $(shell grep '^\#define VERSION ' config.h | cut -d '"' -f2)
++
++PREFIX ?= $(HOST_OUT)
++BIN_PATH = $(PREFIX)/bin
++HELPER_PATH = $(PREFIX)/lib/afl
++DOC_PATH = $(PREFIX)/share/doc/afl
++MISC_PATH = $(PREFIX)/share/afl
++
++common_CFLAGS ?= -O3 -funroll-loops
++common_CFLAGS += -Wall -g -Wno-pointer-sign -Wno-pointer-arith \
++	-Wno-sign-compare -Wno-unused-parameter \
++	-DAFL_PATH=\"$(HELPER_PATH)\" -DDOC_PATH=\"$(DOC_PATH)\" \
++	-DBIN_PATH=\"$(BIN_PATH)\"
++
++ifdef AFL_TRACE_PC
++  common_CFLAGS    += -DUSE_TRACE_PC=1
++endif
++
++#################################afl-gcc#################################
++
++include $(CLEAR_VARS)
++
++ALL_TOOLS := \
++	afl-g++ \
++	afl-clang \
++	afl-clang++ \
++
++LOCAL_SRC_FILES := afl-gcc.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-gcc
++LOCAL_POST_INSTALL_CMD := $(hide) $(foreach t,$(ALL_TOOLS),ln -sf afl-gcc $(BIN_PATH)/$(t);)
++include $(BUILD_HOST_EXECUTABLE)
++
++#################################afl-as#################################
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := afl-as.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-as
++LOCAL_MODULE_PATH := $(HELPER_PATH)
++LOCAL_POST_INSTALL_CMD := $(hide) ln -sf afl-as $(LOCAL_MODULE_PATH)/as;
++include $(BUILD_HOST_EXECUTABLE)
++
++#################################afl-fuzz#################################
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := afl-fuzz.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_LDLIBS := -ldl
++LOCAL_MODULE := afl-fuzz
++include $(BUILD_EXECUTABLE)
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := afl-fuzz.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_LDLIBS := -ldl
++LOCAL_MODULE := afl-fuzz
++include $(BUILD_HOST_EXECUTABLE)
++
++include $(CLEAR_VARS)
++
++#################################afl-showmap#################################
++
++LOCAL_SRC_FILES := afl-showmap.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-showmap
++include $(BUILD_EXECUTABLE)
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := afl-showmap.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-showmap
++include $(BUILD_HOST_EXECUTABLE)
++
++#################################afl-tmin#################################
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := afl-tmin.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-tmin
++include $(BUILD_EXECUTABLE)
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := afl-tmin.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-tmin
++include $(BUILD_HOST_EXECUTABLE)
++
++#################################afl-analyze#################################
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := afl-analyze.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-analyze
++include $(BUILD_EXECUTABLE)
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := afl-analyze.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-analyze
++include $(BUILD_HOST_EXECUTABLE)
++
++#################################afl-gotcpu#################################
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := afl-gotcpu.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-gotcpu
++include $(BUILD_EXECUTABLE)
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := afl-gotcpu.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-gotcpu
++include $(BUILD_HOST_EXECUTABLE)
++
++#################################afl-clang-fast#################################
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := llvm_mode/afl-clang-fast.c
++LOCAL_CLANG := true
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-clang-fast
++LOCAL_POST_INSTALL_CMD := $(hide) ln -sf afl-clang-fast $(BIN_PATH)/afl-clang-fast++;
++include $(BUILD_HOST_EXECUTABLE)
++
++#################################afl-llvm-pass.so#################################
++
++include $(CLEAR_VARS)
++
++LLVM_CONFIG := llvm-config-3.8
++CLANG_CFL := `$(LLVM_CONFIG) --cxxflags` -fno-rtti -fpic -O3 -funroll-loops -Wall -g -Wno-variadic-macros -Wno-unknown-warning-option
++CLANG_LFL := $(LDFLAGS) `$(LLVM_CONFIG) --ldflags` 
++HOST_CLANG_CXX := clang++-3.8
++
++$(info Generating afl-llvm-pass.so)
++$(shell $(HOST_CLANG_CXX) $(CLANG_CFL) -shared $(LOCAL_PATH)/llvm_mode/afl-llvm-pass.so.cc -o $(HELPER_PATH)/afl-llvm-pass.so $(CLANG_LFL))
++
++#################################afl-llvm-rt#################################
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := llvm_mode/afl-llvm-rt.o.c
++LOCAL_CLANG := true
++LOCAL_CC := /usr/bin/clang-3.8
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MODULE := afl-llvm-rt
++LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(TARGET_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt.o;
++
++include $(BUILD_SHARED_LIBRARY)
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := llvm_mode/afl-llvm-rt.o.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MULTILIB := 64
++LOCAL_MODULE := afl-llvm-rt
++LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(HOST_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt-host.o; \
++	cp -f $(HOST_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt-host-64.o;
++
++include $(BUILD_HOST_SHARED_LIBRARY)
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := llvm_mode/afl-llvm-rt.o.c
++LOCAL_CFLAGS := $(common_CFLAGS)
++LOCAL_MULTILIB := 32
++LOCAL_MODULE := afl-llvm-rt
++LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(HOST_OUT_INTERMEDIATES)32/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt-host-32.o;
++
++include $(BUILD_HOST_SHARED_LIBRARY)
+diff -urN a/afl-2.33b/llvm_mode/afl-llvm-rt.o.c b/afl-2.33b/llvm_mode/afl-llvm-rt.o.c
+--- a/afl-2.33b/llvm_mode/afl-llvm-rt.o.c	2016-08-09 05:38:18.000000000 +0800
++++ b/afl-2.33b/llvm_mode/afl-llvm-rt.o.c	2016-08-30 15:02:42.628201680 +0800
+@@ -19,6 +19,10 @@
+ 
+ */
+ 
++#ifdef __ANDROID__
++   #include "android-ashmem.h"
++#endif
++
+ #include "../config.h"
+ #include "../types.h"
+ 
