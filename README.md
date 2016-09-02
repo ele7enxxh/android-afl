@@ -14,6 +14,7 @@ android-afl is a modified version of AFL that supports fuzzing on Android, the S
 first, download and build the [Android open-source project (AOSP)][Android open-source project].
 then, download all the android-afl source code to AOSP folder:
 `cd AOSP`
+
 `git clone https://github.com/ele7enxxh/android-afl`
 to build:
 `cd android-afl`
