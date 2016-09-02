@@ -103,7 +103,7 @@ if you want fuzz on host, you should use the afl-fuzz in the $(HOST\_OUT)/bin fo
 not all of the AFL tools have been tested on Android, but afl-fuzz has been working great on android-6.0.1 for me.
 
 [american-fuzzy-lop]: http://lcamtuf.coredump.cx/afl/
-[android-afl.patch]: https://github.com/ele7enxxh/android-afl/blob/master/android-patch/android-afl.patch
+[android-afl.patch]: https://github.com/ele7enxxh/android-afl/blob/master/android-patch/afl-2.33b-android.patch
 [Android open-source project]: https://source.android.com/
 [AFL README]: lcamtuf.coredump.cx/afl/README.txt
 
