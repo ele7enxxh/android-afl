@@ -13,12 +13,15 @@ android-afl is a modified version of AFL that supports fuzzing on Android, the S
 ## Build
 first, download and build the [Android open-source project (AOSP)][Android open-source project].
 then, download all the android-afl source code to AOSP folder:
-`cd AOSP`
-
-`git clone https://github.com/ele7enxxh/android-afl`
+```
+cd AOSP
+git clone https://github.com/ele7enxxh/android-afl
+```
 to build:
-`cd android-afl`
-`mm -B`
+```
+cd android-afl
+mm -B
+```
 this will produce all afl binaries that you can use on host(e.g. Linux) or Android.
 
 ## Usage
@@ -28,43 +31,69 @@ afl-gcc/afl-g++, afl-clang/afl-clang++ and afl-clang-fast/afl-clang-fast++ are a
 ### recompile with afl-gcc and afl-g++
 
 first, add this code in Android.mk which you want to fuzz:
-`LOCAL_CLANG := false`
-`LOCAL_CC := afl-gcc`
-`LOCAL_CXX := afl-g++`
+```
+LOCAL_CLANG := false
+LOCAL_CC := afl-gcc
+LOCAL_CXX := afl-g++
+```
 if the targeted binary is a shared library, you also need do that in the Android.mk like:
-`LOCAL_LDLIBS := -Wl,--no-warn-shared-textrel`
+```
+LOCAL_LDLIBS := -Wl,--no-warn-shared-textrel
+```
 then you can recompile the Android program to produce the binary on arm arch:
-`AFL_CC=arm-linux-androideabi-gcc AFL_CXX=arm-linux-androideabi-g++ AFL_AS=arm-linux-androideabi-as mm -B`
+```
+AFL_CC=arm-linux-androideabi-gcc AFL_CXX=arm-linux-androideabi-g++ AFL_AS=arm-linux-androideabi-as mm -B
+```
 else, if you want to fuzz on host:
-`AFL_CC=gcc AFL_AS=as mm -B`
+```
+AFL_CC=gcc AFL_AS=as mm -B
+```
 
 ### recompile with afl-clang and afl-clang++
 
 first, add this code in Android.mk which you want to fuzz:
-`LOCAL_CLANG := true`
-`LOCAL_CC := afl-clang`
-`LOCAL_CXX := afl-clang++`
+```
+LOCAL_CLANG := true
+LOCAL_CC := afl-clang
+LOCAL_CXX := afl-clang++
+```
 if the target binary is a shared library, you also need do that in the Android.mk like:
-`LOCAL_LDLIBS := -Wl,--no-warn-shared-textrel`
+```
+LOCAL_LDLIBS := -Wl,--no-warn-shared-textrel
+```
 then you can recompile the Android program to produce the binary on arm arch:
-`AFL_CC=/usr/bin/clang-3.8 AFL_CXX=/usr/bin/clang++-3.8 AFL_AS=arm-linux-androideabi-as mm -B`
+```
+AFL_CC=/usr/bin/clang-3.8 AFL_CXX=/usr/bin/clang++-3.8 AFL_AS=arm-linux-androideabi-as mm -B
+```
 else, if you want to fuzz on host:
-`AFL_CC=/usr/bin/clang-3.8 AFL_CXX=/usr/bin/clang++-3.8 AFL_AS=as mm -B`
+```
+AFL_CC=/usr/bin/clang-3.8 AFL_CXX=/usr/bin/clang++-3.8 AFL_AS=as mm -B
+```
 
 ### recompile with afl-clang-fast and afl-clang-fast++
 
 first, add this code in Android.mk which you want to fuzz:
-`LOCAL_CLANG := true`
-`LOCAL_CC := afl-clang`
-`LOCAL_CXX := afl-clang++`
+```
+LOCAL_CLANG := true
+LOCAL_CC := afl-clang
+LOCAL_CXX := afl-clang++
+```
 if you want get the binary on arm arch, you need add this code in the Android.mk:
-`LOCAL_LDFLAGS := $(HOST_OUT)/lib/afl/afl-llvm-rt.o`
+```
+LOCAL_LDFLAGS := $(HOST_OUT)/lib/afl/afl-llvm-rt.o
+```
 else on 64-bit host:
-`LOCAL_LDFLAGS := $(HOST_OUT)/lib/afl/afl-llvm-rt-host.o`
+```
+LOCAL_LDFLAGS := $(HOST_OUT)/lib/afl/afl-llvm-rt-host.o
+```
 else on 32-bit host:
-`LOCAL_LDFLAGS := $(HOST_OUT)/lib/afl/afl-llvm-rt-host-32.o`
+```
+LOCAL_LDFLAGS := $(HOST_OUT)/lib/afl/afl-llvm-rt-host-32.o
+```
 now you can recompile Android program:
-`AFL_CC=/usr/bin/clang-3.8 AFL_CXX=/usr/bin/clang++-3.8 mm -B`
+```
+AFL_CC=/usr/bin/clang-3.8 AFL_CXX=/usr/bin/clang++-3.8 mm -B
+```
 
 ### To fuzz
 
