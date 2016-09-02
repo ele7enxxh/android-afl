@@ -75,8 +75,8 @@ AFL_CC=prebuilts/clang/linux-x86/host/3.6/bin/clang AFL_CXX=prebuilts/clang/linu
 first, add this code in Android.mk which you want to fuzz:
 ```
 LOCAL_CLANG := true
-LOCAL_CC := afl-clang
-LOCAL_CXX := afl-clang++
+LOCAL_CC := afl-clang-fast
+LOCAL_CXX := afl-clang-fast++
 ```
 if you want get the binary on arm arch, you need add this code in the Android.mk:
 ```
