@@ -97,7 +97,7 @@ AFL_CC=/usr/bin/clang-3.8 AFL_CXX=/usr/bin/clang++-3.8 mm -B
 
 ### To fuzz
 
-if you want fuzz on host, you should use the afl-fuzz in the \$(HOST\_OUT)/bin folder, otherwise you need to use the afl-fuzz in the \$(target\_OUT)/bin folder. To ingore `bind_to_free_cpu`, the `AFL_NO_AFFINITY=1` should been set. Please refer to [AFl README][AFL README] for more details.
+if you want fuzz on host, you should use the afl-fuzz in the $(HOST\_OUT)/bin folder, otherwise you need to use the afl-fuzz in the $(target\_OUT)/bin folder. To ingore `bind_to_free_cpu`, the `AFL_NO_AFFINITY=1` should been set. Please refer to [AFl README][AFL README] for more details.
 
 ## Note
 not all of the AFL tools have been tested on Android, but afl-fuzz has been working great on android-6.0.1 for me.
