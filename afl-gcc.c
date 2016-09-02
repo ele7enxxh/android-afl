@@ -195,6 +195,10 @@ static void edit_params(u32 argc, char** argv) {
     if (!strcmp(cur, "-marm")) {
       arm_set = 1;
     }
+    
+    if (!strcmp(cur, "arm-linux-androideabi")) {
+      arm_set = 1;
+    }
 
     if (!strncmp(cur, "-B", 2)) {
 
