@@ -63,11 +63,11 @@ LOCAL_LDLIBS := -Wl,--no-warn-shared-textrel
 ```
 then you can recompile the Android program to produce the binary on arm arch:
 ```
-AFL_CC=/usr/bin/clang-3.8 AFL_CXX=/usr/bin/clang++-3.8 AFL_AS=arm-linux-androideabi-as mm -B
+AFL_CC=prebuilts/clang/linux-x86/host/3.6/bin/clang AFL_CXX=prebuilts/clang/linux-x86/host/3.6/bin/clang++ AFL_AS=arm-linux-androideabi-as mm -B
 ```
 else, if you want to fuzz on host:
 ```
-AFL_CC=/usr/bin/clang-3.8 AFL_CXX=/usr/bin/clang++-3.8 AFL_AS=as mm -B
+AFL_CC=prebuilts/clang/linux-x86/host/3.6/bin/clang AFL_CXX=prebuilts/clang/linux-x86/host/3.6/bin/clang++ AFL_AS=as mm -B
 ```
 
 ### recompile with afl-clang-fast and afl-clang-fast++
