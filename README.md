@@ -105,7 +105,7 @@ not all of the AFL tools have been tested on Android, but afl-fuzz has been work
 [american-fuzzy-lop]: http://lcamtuf.coredump.cx/afl/
 [android-afl.patch]: https://github.com/ele7enxxh/android-afl/blob/master/android-patch/afl-2.33b-android.patch
 [Android open-source project]: https://source.android.com/
-[AFL README]: lcamtuf.coredump.cx/afl/README.txt
+[AFL README]: http://lcamtuf.coredump.cx/afl/README.txt
 
 
 
