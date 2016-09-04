@@ -5,7 +5,7 @@ VERSION = $(shell grep '^\#define VERSION ' config.h | cut -d '"' -f2)
 
 PREFIX ?= $(HOST_OUT)
 BIN_PATH = $(PREFIX)/bin
-HELPER_PATH = $(PREFIX)/lib/afl
+HELPER_PATH = $(PREFIX)/afl
 DOC_PATH = $(PREFIX)/share/doc/afl
 MISC_PATH = $(PREFIX)/share/afl
 
