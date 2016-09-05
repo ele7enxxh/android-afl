@@ -80,15 +80,15 @@ LOCAL_CXX := afl-clang-fast++
 ```
 if you want get the binary on arm arch, you need add this code in the Android.mk:
 ```
-LOCAL_LDFLAGS := $(HOST_OUT)/lib/afl/afl-llvm-rt.o
+LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt.o
 ```
 else on 64-bit host:
 ```
-LOCAL_LDFLAGS := $(HOST_OUT)/lib/afl/afl-llvm-rt-host.o
+LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt-host.o
 ```
 else on 32-bit host:
 ```
-LOCAL_LDFLAGS := $(HOST_OUT)/lib/afl/afl-llvm-rt-host-32.o
+LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt-host-32.o
 ```
 now you can recompile Android program:
 ```
