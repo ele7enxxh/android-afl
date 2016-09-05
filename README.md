@@ -26,74 +26,7 @@ this will produce all afl binaries that you can use on host(e.g. Linux) or Andro
 
 ## Usage
 
-afl-gcc/afl-g++, afl-clang/afl-clang++ and afl-clang-fast/afl-clang-fast++ are all supported in android-afl.
-
-### recompile with afl-gcc and afl-g++
-
-first, add this code in Android.mk which you want to fuzz:
-```
-LOCAL_CLANG := false
-LOCAL_CC := afl-gcc
-LOCAL_CXX := afl-g++
-```
-if the targeted binary is a shared library, you also need do that in the Android.mk like:
-```
-LOCAL_LDLIBS := -Wl,--no-warn-shared-textrel
-```
-then you can recompile the Android program to produce the binary on arm arch:
-```
-AFL_CC=arm-linux-androideabi-gcc AFL_CXX=arm-linux-androideabi-g++ AFL_AS=arm-linux-androideabi-as mm -B
-```
-else, if you want to fuzz on host:
-```
-AFL_CC=gcc AFL_AS=as mm -B
-```
-
-### recompile with afl-clang and afl-clang++
-
-first, add this code in Android.mk which you want to fuzz:
-```
-LOCAL_CLANG := true
-LOCAL_CC := afl-clang
-LOCAL_CXX := afl-clang++
-```
-if the target binary is a shared library, you also need do that in the Android.mk like:
-```
-LOCAL_LDLIBS := -Wl,--no-warn-shared-textrel
-```
-then you can recompile the Android program to produce the binary on arm arch:
-```
-AFL_CC=prebuilts/clang/linux-x86/host/3.6/bin/clang AFL_CXX=prebuilts/clang/linux-x86/host/3.6/bin/clang++ AFL_AS=arm-linux-androideabi-as mm -B
-```
-else, if you want to fuzz on host:
-```
-AFL_CC=prebuilts/clang/linux-x86/host/3.6/bin/clang AFL_CXX=prebuilts/clang/linux-x86/host/3.6/bin/clang++ AFL_AS=as mm -B
-```
-
-### recompile with afl-clang-fast and afl-clang-fast++
-
-first, add this code in Android.mk which you want to fuzz:
-```
-LOCAL_CLANG := true
-LOCAL_CC := afl-clang-fast
-LOCAL_CXX := afl-clang-fast++
-```
-if you want get the binary on arm arch, you need add this code in the Android.mk:
-```
-LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt.o
-```
-else on 64-bit host:
-```
-LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt-host.o
-```
-else on 32-bit host:
-```
-LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt-host-32.o
-```
-now you can recompile Android program:
-```
-AFL_CC=/usr/bin/clang-3.8 AFL_CXX=/usr/bin/clang++-3.8 mm -B
-```
+afl-gcc/afl-g++, afl-clang/afl-clang++ and afl-clang-fast/afl-clang-fast++ are all supported in android-afl. Please refer to [android-afl-test][android-afl-test] for more details.
 
 ### To fuzz
 
@@ -105,6 +38,7 @@ not all of the AFL tools have been tested on Android, but afl-fuzz has been work
 [american-fuzzy-lop]: http://lcamtuf.coredump.cx/afl/
 [android-afl.patch]: https://github.com/ele7enxxh/android-afl/blob/master/android-patch/afl-2.33b-android.patch
 [Android open-source project]: https://source.android.com/
+[android-afl-test]: https://github.com/ele7enxxh/android-afl/tree/master/android-test
 [AFL README]: http://lcamtuf.coredump.cx/afl/README.txt
 
 
