@@ -148,7 +148,7 @@ CLANG_LFL := $(LDFLAGS) `$(LLVM_CONFIG) --ldflags`
 HOST_CLANG_CXX := clang++-3.8
 
 $(info Generating afl-llvm-pass.so)
-$(shell $(HOST_CLANG_CXX) $(CLANG_CFL) -shared $(LOCAL_PATH)/llvm_mode/afl-llvm-pass.so.cc -o $(HELPER_PATH)/afl-llvm-pass.so $(CLANG_LFL))
+$(shell ($(HOST_CLANG_CXX) $(CLANG_CFL) -shared $(LOCAL_PATH)/llvm_mode/afl-llvm-pass.so.cc -o $(HELPER_PATH)/afl-llvm-pass.so $(CLANG_LFL)))
 
 #################################afl-llvm-rt#################################
 
