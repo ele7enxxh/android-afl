@@ -184,7 +184,7 @@ static const u8 *main_payload_arm =
   "\tbl write\n"
   "\n"
   "\tcmp r0, #4\n"
-  "\tbne __afl_store\n"
+  "\tbne __afl_fork_resume\n"
   "\n"
   "\t__afl_fork_wait_loop:\n"
   "\tmov r0, #" STRINGIFY(FORKSRV_FD) "\n"
