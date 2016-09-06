@@ -230,7 +230,7 @@ diff -urN a/afl-2.33b/afl-as.h b/afl-2.33b/afl-as.h
 +  "\tbl write\n"
 +  "\n"
 +  "\tcmp r0, #4\n"
-+  "\tbne __afl_store\n"
++  "\tbne __afl_fork_resume\n"
 +  "\n"
 +  "\t__afl_fork_wait_loop:\n"
 +  "\tmov r0, #" STRINGIFY(FORKSRV_FD) "\n"
