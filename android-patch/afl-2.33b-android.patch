@@ -1,6 +1,6 @@
 diff -urN a/afl-2.33b/afl-analyze.c b/afl-2.33b/afl-analyze.c
 --- a/afl-2.33b/afl-analyze.c	2016-08-04 01:52:58.000000000 +0800
-+++ b/afl-2.33b/afl-analyze.c	2016-09-05 12:35:47.939888496 +0800
++++ b/afl-2.33b/afl-analyze.c	2016-09-12 15:10:02.243535000 +0800
 @@ -21,6 +21,10 @@
  
  #define AFL_MAIN
@@ -12,9 +12,20 @@ diff -urN a/afl-2.33b/afl-analyze.c b/afl-2.33b/afl-analyze.c
  #include "config.h"
  #include "types.h"
  #include "debug.h"
+@@ -40,7 +44,9 @@
+ 
+ #include <sys/wait.h>
+ #include <sys/time.h>
+-#include <sys/shm.h>
++#ifndef __ANDROID__
++  #include <sys/shm.h>
++#endif
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <sys/resource.h>
 diff -urN a/afl-2.33b/afl-as.c b/afl-2.33b/afl-as.c
 --- a/afl-2.33b/afl-as.c	2016-02-10 23:53:12.000000000 +0800
-+++ b/afl-2.33b/afl-as.c	2016-09-05 12:35:47.943888496 +0800
++++ b/afl-2.33b/afl-as.c	2016-09-06 11:05:50.264384000 +0800
 @@ -212,6 +212,111 @@
  }
  
@@ -145,7 +156,7 @@ diff -urN a/afl-2.33b/afl-as.c b/afl-2.33b/afl-as.c
  
 diff -urN a/afl-2.33b/afl-as.h b/afl-2.33b/afl-as.h
 --- a/afl-2.33b/afl-as.h	2016-07-05 04:08:29.000000000 +0800
-+++ b/afl-2.33b/afl-as.h	2016-09-05 12:35:47.943888496 +0800
++++ b/afl-2.33b/afl-as.h	2016-09-06 11:16:28.124400000 +0800
 @@ -104,6 +104,172 @@
  
   */
@@ -321,7 +332,7 @@ diff -urN a/afl-2.33b/afl-as.h b/afl-2.33b/afl-as.h
    "\n"
 diff -urN a/afl-2.33b/afl-fuzz.c b/afl-2.33b/afl-fuzz.c
 --- a/afl-2.33b/afl-fuzz.c	2016-08-20 14:40:05.000000000 +0800
-+++ b/afl-2.33b/afl-fuzz.c	2016-09-05 12:35:47.943888496 +0800
++++ b/afl-2.33b/afl-fuzz.c	2016-09-12 15:09:51.795534000 +0800
 @@ -26,6 +26,10 @@
  #define _GNU_SOURCE
  #define _FILE_OFFSET_BITS 64
@@ -333,7 +344,18 @@ diff -urN a/afl-2.33b/afl-fuzz.c b/afl-2.33b/afl-fuzz.c
  #include "config.h"
  #include "types.h"
  #include "debug.h"
-@@ -3937,7 +3941,9 @@
+@@ -48,7 +52,9 @@
+ 
+ #include <sys/wait.h>
+ #include <sys/time.h>
+-#include <sys/shm.h>
++#ifndef __ANDROID__
++  #include <sys/shm.h>
++#endif
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <sys/resource.h>
+@@ -3937,7 +3943,9 @@
      SAYF(cBRI "Your terminal is too small to display the UI.\n"
           "Please resize terminal window to at least 80x25.\n" cRST);
  
@@ -344,7 +366,7 @@ diff -urN a/afl-2.33b/afl-fuzz.c b/afl-2.33b/afl-fuzz.c
  
    }
  
-@@ -7805,6 +7811,12 @@
+@@ -7805,6 +7813,12 @@
    if (optind == argc || !in_dir || !out_dir) usage(argv[0]);
  
    setup_signal_handlers();
@@ -359,7 +381,7 @@ diff -urN a/afl-2.33b/afl-fuzz.c b/afl-2.33b/afl-fuzz.c
    if (sync_id) fix_up_sync();
 diff -urN a/afl-2.33b/afl-gcc.c b/afl-2.33b/afl-gcc.c
 --- a/afl-2.33b/afl-gcc.c	2016-08-20 14:29:07.000000000 +0800
-+++ b/afl-2.33b/afl-gcc.c	2016-09-05 12:35:47.943888496 +0800
++++ b/afl-2.33b/afl-gcc.c	2016-09-06 11:05:50.264384000 +0800
 @@ -116,6 +116,8 @@
    u8 m32_set = 0;
  #endif
@@ -421,7 +443,7 @@ diff -urN a/afl-2.33b/afl-gcc.c b/afl-2.33b/afl-gcc.c
    edit_params(argc, argv);
 diff -urN a/afl-2.33b/afl-gotcpu.c b/afl-2.33b/afl-gotcpu.c
 --- a/afl-2.33b/afl-gotcpu.c	2016-04-28 06:31:44.000000000 +0800
-+++ b/afl-2.33b/afl-gotcpu.c	2016-09-05 12:35:47.943888496 +0800
++++ b/afl-2.33b/afl-gotcpu.c	2016-09-06 11:05:50.264384000 +0800
 @@ -28,6 +28,10 @@
  #define AFL_MAIN
  #define _GNU_SOURCE
@@ -435,7 +457,7 @@ diff -urN a/afl-2.33b/afl-gotcpu.c b/afl-2.33b/afl-gotcpu.c
  #include <unistd.h>
 diff -urN a/afl-2.33b/afl-showmap.c b/afl-2.33b/afl-showmap.c
 --- a/afl-2.33b/afl-showmap.c	2016-08-04 01:52:48.000000000 +0800
-+++ b/afl-2.33b/afl-showmap.c	2016-09-05 12:35:47.943888496 +0800
++++ b/afl-2.33b/afl-showmap.c	2016-09-12 15:10:27.507535000 +0800
 @@ -23,6 +23,10 @@
  
  #define AFL_MAIN
@@ -447,9 +469,20 @@ diff -urN a/afl-2.33b/afl-showmap.c b/afl-2.33b/afl-showmap.c
  #include "config.h"
  #include "types.h"
  #include "debug.h"
+@@ -41,7 +45,9 @@
+ 
+ #include <sys/wait.h>
+ #include <sys/time.h>
+-#include <sys/shm.h>
++#ifndef __ANDROID__
++  #include <sys/shm.h>
++#endif
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <sys/resource.h>
 diff -urN a/afl-2.33b/afl-tmin.c b/afl-2.33b/afl-tmin.c
 --- a/afl-2.33b/afl-tmin.c	2016-08-04 01:53:28.000000000 +0800
-+++ b/afl-2.33b/afl-tmin.c	2016-09-05 12:35:47.943888496 +0800
++++ b/afl-2.33b/afl-tmin.c	2016-09-12 15:10:51.947536000 +0800
 @@ -21,6 +21,10 @@
  
  #define AFL_MAIN
@@ -461,16 +494,28 @@ diff -urN a/afl-2.33b/afl-tmin.c b/afl-2.33b/afl-tmin.c
  #include "config.h"
  #include "types.h"
  #include "debug.h"
+@@ -39,7 +43,9 @@
+ 
+ #include <sys/wait.h>
+ #include <sys/time.h>
+-#include <sys/shm.h>
++#ifndef __ANDROID__
++  #include <sys/shm.h>
++#endif
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ #include <sys/resource.h>
 diff -urN a/afl-2.33b/android-ashmem.h b/afl-2.33b/android-ashmem.h
 --- a/afl-2.33b/android-ashmem.h	1970-01-01 08:00:00.000000000 +0800
-+++ b/afl-2.33b/android-ashmem.h	2016-09-05 12:35:47.943888496 +0800
-@@ -0,0 +1,69 @@
++++ b/afl-2.33b/android-ashmem.h	2016-09-12 15:11:10.599536000 +0800
+@@ -0,0 +1,70 @@
 +#ifndef _ANDROID_ASHMEM_H
 +#define _ANDROID_ASHMEM_H
 +
 +#include <fcntl.h>
++#include <linux/shm.h>
 +#include <linux/ashmem.h>
-+#include <sys/shm.h>
++#include <sys/ioctl.h>
 +#include <sys/mman.h>
 +
 +#include <stdio.h>
@@ -536,8 +581,8 @@ diff -urN a/afl-2.33b/android-ashmem.h b/afl-2.33b/android-ashmem.h
 +#endif
 diff -urN a/afl-2.33b/Android.mk b/afl-2.33b/Android.mk
 --- a/afl-2.33b/Android.mk	1970-01-01 08:00:00.000000000 +0800
-+++ b/afl-2.33b/Android.mk	2016-09-05 12:35:47.939888496 +0800
-@@ -0,0 +1,185 @@
++++ b/afl-2.33b/Android.mk	2016-09-18 14:44:19.731377000 +0800
+@@ -0,0 +1,189 @@
 +LOCAL_PATH := $(call my-dir)
 +
 +PROGNAME = afl
@@ -591,7 +636,6 @@ diff -urN a/afl-2.33b/Android.mk b/afl-2.33b/Android.mk
 +
 +LOCAL_SRC_FILES := afl-fuzz.c
 +LOCAL_CFLAGS := $(common_CFLAGS)
-+LOCAL_LDLIBS := -ldl
 +LOCAL_MODULE := afl-fuzz
 +include $(BUILD_EXECUTABLE)
 +
@@ -688,19 +732,24 @@ diff -urN a/afl-2.33b/Android.mk b/afl-2.33b/Android.mk
 +HOST_CLANG_CXX := clang++-3.8
 +
 +$(info Generating afl-llvm-pass.so)
-+$(shell $(HOST_CLANG_CXX) $(CLANG_CFL) -shared $(LOCAL_PATH)/llvm_mode/afl-llvm-pass.so.cc -o $(HELPER_PATH)/afl-llvm-pass.so $(CLANG_LFL))
++$(shell ($(HOST_CLANG_CXX) $(CLANG_CFL) -shared $(LOCAL_PATH)/llvm_mode/afl-llvm-pass.so.cc -o $(HELPER_PATH)/afl-llvm-pass.so $(CLANG_LFL)))
 +
-+#################################afl-llvm-rt#################################
++################################afl-llvm-rt#################################
 +
 +include $(CLEAR_VARS)
 +
 +LOCAL_SRC_FILES := llvm_mode/afl-llvm-rt.o.c
 +LOCAL_CLANG := true
++LOCAL_MULTILIB := both
 +LOCAL_CC := /usr/bin/clang-3.8
 +LOCAL_CFLAGS := $(common_CFLAGS)
 +LOCAL_MODULE := afl-llvm-rt
++ifeq ($(TARGET_2ND_ARCH),)
 +LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(TARGET_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt.o;
-+
++else
++LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(TARGET_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt-64.o; \
++	cp -f $(TARGET_OUT_INTERMEDIATES)_$(TARGET_2ND_ARCH)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt.o;
++endif
 +include $(BUILD_SHARED_LIBRARY)
 +
 +include $(CLEAR_VARS)
@@ -723,9 +772,352 @@ diff -urN a/afl-2.33b/Android.mk b/afl-2.33b/Android.mk
 +LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(HOST_OUT_INTERMEDIATES)32/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt-host-32.o;
 +
 +include $(BUILD_HOST_SHARED_LIBRARY)
+diff -urN a/afl-2.33b/android-test/Android.mk b/afl-2.33b/android-test/Android.mk
+--- a/afl-2.33b/android-test/Android.mk	1970-01-01 08:00:00.000000000 +0800
++++ b/afl-2.33b/android-test/Android.mk	2016-09-18 14:42:37.699378000 +0800
+@@ -0,0 +1,106 @@
++LOCAL_PATH := $(call my-dir)
++
++include $(CLEAR_VARS)
++
++LOCAL_SRC_FILES := crash.c
++LOCAL_MODULE := crash
++
++# test afl-gcc/afl-g++ on ARM/Android
++# to build: TEST_GCC_ARM=true mm -B
++ifeq ($(TEST_GCC_ARM), true)
++export AFL_CC := $(TARGET_CC)
++# expoet AFL_CXX := $(TARGET_CXX)
++export AFL_AS := $(TARGET_TOOLS_PREFIX)as
++LOCAL_CLANG := false
++LOCAL_CC := afl-gcc
++# LOCAL_CXX := afl-g++
++include $(BUILD_EXECUTABLE)
++endif
++
++# test afl-gcc/afl-g++ on host
++# to build: TEST_GCC_HOST=true mm -B
++ifeq ($(TEST_GCC_HOST), true)
++export AFL_CC=$(HOST_CC)
++# export AFL_CXX=$(HOST_CXX)
++LOCAL_MULTILIB := 32
++export AFL_AS=$(HOST_TOOLCHAIN_PREFIX)as
++LOCAL_CLANG := false
++LOCAL_CC := afl-gcc
++# LOCAL_CXX := afl-g++
++include $(BUILD_HOST_EXECUTABLE)
++endif
++
++# test afl-clang/afl-clang++ on ARM/Android
++# to build: TEST_CLANG_ARM=true mm -B
++ifeq ($(TEST_CLANG_ARM), true)
++export AFL_CC=$(CLANG)
++# export AFL_CXX=$(CLANG_CXX)
++export AFL_AS=$(TARGET_TOOLS_PREFIX)as
++LOCAL_CLANG := true
++LOCAL_CC := afl-clang
++# LOCAL_CC := afl-clang++
++include $(BUILD_EXECUTABLE)
++endif
++
++# test afl-clang/afl-clang++ on host
++# to build: TEST_CLANG_HOST=true mm -B
++ifeq ($(TEST_CLANG_HOST), true)
++export AFL_CC=$(CLANG)
++# export AFL_CXX=$(CLANG_CXX)
++export AFL_AS=$(HOST_TOOLCHAIN_PREFIX)as
++LOCAL_CLANG := true
++LOCAL_CC := afl-clang
++# LOCAL_CC := afl-clang++
++include $(BUILD_HOST_EXECUTABLE)
++endif
++
++# test afl-clang-fast/afl-clang-fast++ on ARM/Android
++# to build: TEST_CLANG_FAST_ARM=true mm -B
++ifeq ($(TEST_CLANG_FAST_ARM), true)
++export AFL_CC=/usr/bin/clang-3.8
++# export AFL_CXX=/usr/bin/clang++-3.8
++LOCAL_CLANG := true
++LOCAL_CC := afl-clang-fast
++# LOCAL_CXX := afl-clang-fast++
++LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt.o
++include $(BUILD_EXECUTABLE)
++endif
++
++# test afl-clang-fast/afl-clang-fast++ on aarch64/Android
++# to build: TEST_CLANG_FAST_AARCH64=true mm -B
++ifeq ($(TEST_CLANG_FAST_AARCH64), true)
++export AFL_CC=/usr/bin/clang-3.8
++# export AFL_CXX=/usr/bin/clang++-3.8
++LOCAL_MULTILIB := 64
++LOCAL_CLANG := true
++LOCAL_CC := afl-clang-fast
++# LOCAL_CXX := afl-clang-fast++
++LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt-64.o
++include $(BUILD_EXECUTABLE)
++endif
++
++# test afl-clang-fast/afl-clang-fast++ on 64bit host
++# to build: TEST_CLANG_FAST_HOST=true mm -B
++ifeq ($(TEST_CLANG_FAST_HOST), true)
++export AFL_CC=/usr/bin/clang-3.8
++# export AFL_CXX=/usr/bin/clang++-3.8
++LOCAL_MULTILIB := 64
++LOCAL_CLANG := true
++LOCAL_CC := afl-clang-fast
++# LOCAL_CXX := afl-clang-fast++
++LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt-host-64.o
++include $(BUILD_HOST_EXECUTABLE)
++endif
++
++# test afl-clang-fast/afl-clang-fast++ on 32bit host
++# to build: TEST_CLANG_FAST_HOST_32=true mm -B
++ifeq ($(TEST_CLANG_FAST_HOST_32), true)
++export AFL_CC=/usr/bin/clang-3.8
++# export AFL_CXX=/usr/bin/clang++-3.8
++LOCAL_MULTILIB := 32
++LOCAL_CLANG := true
++LOCAL_CC := afl-clang-fast
++# LOCAL_CXX := afl-clang-fast++
++LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt-host-32.o
++include $(BUILD_HOST_EXECUTABLE)
++endif
+\ No newline at end of file
+diff -urN a/afl-2.33b/android-test/crash.c b/afl-2.33b/android-test/crash.c
+--- a/afl-2.33b/android-test/crash.c	1970-01-01 08:00:00.000000000 +0800
++++ b/afl-2.33b/android-test/crash.c	2016-09-06 11:08:52.232389000 +0800
+@@ -0,0 +1,22 @@
++#include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
++#include <string.h>
++
++int main()
++{
++  char buf[5];
++
++  memset(buf, 5, 0);
++
++  read(0, buf, 5);
++
++  if (buf[0] == 'c')
++  	if (buf[1] == 'r')
++  		if (buf[2] == 'a')
++  			if (buf[3] == 's')
++  				if (buf[4] == 'h')
++  					abort();
++
++  return 0;
++}
+\ No newline at end of file
+diff -urN a/afl-2.33b/LICENSE b/afl-2.33b/LICENSE
+--- a/afl-2.33b/LICENSE	1970-01-01 08:00:00.000000000 +0800
++++ b/afl-2.33b/LICENSE	2016-09-06 11:05:50.264384000 +0800
+@@ -0,0 +1,201 @@
++                                 Apache License
++                           Version 2.0, January 2004
++                        http://www.apache.org/licenses/
++
++   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
++
++   1. Definitions.
++
++      "License" shall mean the terms and conditions for use, reproduction,
++      and distribution as defined by Sections 1 through 9 of this document.
++
++      "Licensor" shall mean the copyright owner or entity authorized by
++      the copyright owner that is granting the License.
++
++      "Legal Entity" shall mean the union of the acting entity and all
++      other entities that control, are controlled by, or are under common
++      control with that entity. For the purposes of this definition,
++      "control" means (i) the power, direct or indirect, to cause the
++      direction or management of such entity, whether by contract or
++      otherwise, or (ii) ownership of fifty percent (50%) or more of the
++      outstanding shares, or (iii) beneficial ownership of such entity.
++
++      "You" (or "Your") shall mean an individual or Legal Entity
++      exercising permissions granted by this License.
++
++      "Source" form shall mean the preferred form for making modifications,
++      including but not limited to software source code, documentation
++      source, and configuration files.
++
++      "Object" form shall mean any form resulting from mechanical
++      transformation or translation of a Source form, including but
++      not limited to compiled object code, generated documentation,
++      and conversions to other media types.
++
++      "Work" shall mean the work of authorship, whether in Source or
++      Object form, made available under the License, as indicated by a
++      copyright notice that is included in or attached to the work
++      (an example is provided in the Appendix below).
++
++      "Derivative Works" shall mean any work, whether in Source or Object
++      form, that is based on (or derived from) the Work and for which the
++      editorial revisions, annotations, elaborations, or other modifications
++      represent, as a whole, an original work of authorship. For the purposes
++      of this License, Derivative Works shall not include works that remain
++      separable from, or merely link (or bind by name) to the interfaces of,
++      the Work and Derivative Works thereof.
++
++      "Contribution" shall mean any work of authorship, including
++      the original version of the Work and any modifications or additions
++      to that Work or Derivative Works thereof, that is intentionally
++      submitted to Licensor for inclusion in the Work by the copyright owner
++      or by an individual or Legal Entity authorized to submit on behalf of
++      the copyright owner. For the purposes of this definition, "submitted"
++      means any form of electronic, verbal, or written communication sent
++      to the Licensor or its representatives, including but not limited to
++      communication on electronic mailing lists, source code control systems,
++      and issue tracking systems that are managed by, or on behalf of, the
++      Licensor for the purpose of discussing and improving the Work, but
++      excluding communication that is conspicuously marked or otherwise
++      designated in writing by the copyright owner as "Not a Contribution."
++
++      "Contributor" shall mean Licensor and any individual or Legal Entity
++      on behalf of whom a Contribution has been received by Licensor and
++      subsequently incorporated within the Work.
++
++   2. Grant of Copyright License. Subject to the terms and conditions of
++      this License, each Contributor hereby grants to You a perpetual,
++      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
++      copyright license to reproduce, prepare Derivative Works of,
++      publicly display, publicly perform, sublicense, and distribute the
++      Work and such Derivative Works in Source or Object form.
++
++   3. Grant of Patent License. Subject to the terms and conditions of
++      this License, each Contributor hereby grants to You a perpetual,
++      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
++      (except as stated in this section) patent license to make, have made,
++      use, offer to sell, sell, import, and otherwise transfer the Work,
++      where such license applies only to those patent claims licensable
++      by such Contributor that are necessarily infringed by their
++      Contribution(s) alone or by combination of their Contribution(s)
++      with the Work to which such Contribution(s) was submitted. If You
++      institute patent litigation against any entity (including a
++      cross-claim or counterclaim in a lawsuit) alleging that the Work
++      or a Contribution incorporated within the Work constitutes direct
++      or contributory patent infringement, then any patent licenses
++      granted to You under this License for that Work shall terminate
++      as of the date such litigation is filed.
++
++   4. Redistribution. You may reproduce and distribute copies of the
++      Work or Derivative Works thereof in any medium, with or without
++      modifications, and in Source or Object form, provided that You
++      meet the following conditions:
++
++      (a) You must give any other recipients of the Work or
++          Derivative Works a copy of this License; and
++
++      (b) You must cause any modified files to carry prominent notices
++          stating that You changed the files; and
++
++      (c) You must retain, in the Source form of any Derivative Works
++          that You distribute, all copyright, patent, trademark, and
++          attribution notices from the Source form of the Work,
++          excluding those notices that do not pertain to any part of
++          the Derivative Works; and
++
++      (d) If the Work includes a "NOTICE" text file as part of its
++          distribution, then any Derivative Works that You distribute must
++          include a readable copy of the attribution notices contained
++          within such NOTICE file, excluding those notices that do not
++          pertain to any part of the Derivative Works, in at least one
++          of the following places: within a NOTICE text file distributed
++          as part of the Derivative Works; within the Source form or
++          documentation, if provided along with the Derivative Works; or,
++          within a display generated by the Derivative Works, if and
++          wherever such third-party notices normally appear. The contents
++          of the NOTICE file are for informational purposes only and
++          do not modify the License. You may add Your own attribution
++          notices within Derivative Works that You distribute, alongside
++          or as an addendum to the NOTICE text from the Work, provided
++          that such additional attribution notices cannot be construed
++          as modifying the License.
++
++      You may add Your own copyright statement to Your modifications and
++      may provide additional or different license terms and conditions
++      for use, reproduction, or distribution of Your modifications, or
++      for any such Derivative Works as a whole, provided Your use,
++      reproduction, and distribution of the Work otherwise complies with
++      the conditions stated in this License.
++
++   5. Submission of Contributions. Unless You explicitly state otherwise,
++      any Contribution intentionally submitted for inclusion in the Work
++      by You to the Licensor shall be under the terms and conditions of
++      this License, without any additional terms or conditions.
++      Notwithstanding the above, nothing herein shall supersede or modify
++      the terms of any separate license agreement you may have executed
++      with Licensor regarding such Contributions.
++
++   6. Trademarks. This License does not grant permission to use the trade
++      names, trademarks, service marks, or product names of the Licensor,
++      except as required for reasonable and customary use in describing the
++      origin of the Work and reproducing the content of the NOTICE file.
++
++   7. Disclaimer of Warranty. Unless required by applicable law or
++      agreed to in writing, Licensor provides the Work (and each
++      Contributor provides its Contributions) on an "AS IS" BASIS,
++      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
++      implied, including, without limitation, any warranties or conditions
++      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
++      PARTICULAR PURPOSE. You are solely responsible for determining the
++      appropriateness of using or redistributing the Work and assume any
++      risks associated with Your exercise of permissions under this License.
++
++   8. Limitation of Liability. In no event and under no legal theory,
++      whether in tort (including negligence), contract, or otherwise,
++      unless required by applicable law (such as deliberate and grossly
++      negligent acts) or agreed to in writing, shall any Contributor be
++      liable to You for damages, including any direct, indirect, special,
++      incidental, or consequential damages of any character arising as a
++      result of this License or out of the use or inability to use the
++      Work (including but not limited to damages for loss of goodwill,
++      work stoppage, computer failure or malfunction, or any and all
++      other commercial damages or losses), even if such Contributor
++      has been advised of the possibility of such damages.
++
++   9. Accepting Warranty or Additional Liability. While redistributing
++      the Work or Derivative Works thereof, You may choose to offer,
++      and charge a fee for, acceptance of support, warranty, indemnity,
++      or other liability obligations and/or rights consistent with this
++      License. However, in accepting such obligations, You may act only
++      on Your own behalf and on Your sole responsibility, not on behalf
++      of any other Contributor, and only if You agree to indemnify,
++      defend, and hold each Contributor harmless for any liability
++      incurred by, or claims asserted against, such Contributor by reason
++      of your accepting any such warranty or additional liability.
++
++   END OF TERMS AND CONDITIONS
++
++   APPENDIX: How to apply the Apache License to your work.
++
++      To apply the Apache License to your work, attach the following
++      boilerplate notice, with the fields enclosed by brackets "{}"
++      replaced with your own identifying information. (Don't include
++      the brackets!)  The text should be enclosed in the appropriate
++      comment syntax for the file format. We also recommend that a
++      file or class name and description of purpose be included on the
++      same "printed page" as the copyright notice for easier
++      identification within third-party archives.
++
++   Copyright {yyyy} {name of copyright owner}
++
++   Licensed under the Apache License, Version 2.0 (the "License");
++   you may not use this file except in compliance with the License.
++   You may obtain a copy of the License at
++
++       http://www.apache.org/licenses/LICENSE-2.0
++
++   Unless required by applicable law or agreed to in writing, software
++   distributed under the License is distributed on an "AS IS" BASIS,
++   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++   See the License for the specific language governing permissions and
++   limitations under the License.
 diff -urN a/afl-2.33b/llvm_mode/afl-llvm-rt.o.c b/afl-2.33b/llvm_mode/afl-llvm-rt.o.c
 --- a/afl-2.33b/llvm_mode/afl-llvm-rt.o.c	2016-08-09 05:38:18.000000000 +0800
-+++ b/afl-2.33b/llvm_mode/afl-llvm-rt.o.c	2016-09-05 12:35:47.947888497 +0800
++++ b/afl-2.33b/llvm_mode/afl-llvm-rt.o.c	2016-09-12 15:11:19.671537000 +0800
 @@ -19,6 +19,10 @@
  
  */
@@ -737,3 +1129,60 @@ diff -urN a/afl-2.33b/llvm_mode/afl-llvm-rt.o.c b/afl-2.33b/llvm_mode/afl-llvm-r
  #include "../config.h"
  #include "../types.h"
  
+@@ -30,7 +34,9 @@
+ #include <assert.h>
+ 
+ #include <sys/mman.h>
+-#include <sys/shm.h>
++#ifndef __ANDROID__
++  #include <sys/shm.h>
++#endif
+ #include <sys/wait.h>
+ #include <sys/types.h>
+ 
+diff -urN a/afl-2.33b/README.md b/afl-2.33b/README.md
+--- a/afl-2.33b/README.md	1970-01-01 08:00:00.000000000 +0800
++++ b/afl-2.33b/README.md	2016-09-18 14:51:28.691371809 +0800
+@@ -0,0 +1,42 @@
++# android-afl
++
++Fuzzing Android program with [american fuzzy lop (AFL)][american-fuzzy-lop]
++
++## android-afl: Android-enabled version of AFL
++
++android-afl is a modified version of AFL that supports fuzzing on Android, the SHM has been replaced with ASHMEM because of Android disable SHM in the kernel. Extra codes have been added in afl-gcc.c, afl-as.c and afl-as.h to support arm arch. Android.mk has been added to support Android build system and llvm_mode. Please refer to the [android-afl.patch][android-afl.patch] for more details.
++
++## Requirements
++* Android source code(e.g. 6.0.1) is needed.
++* llvm-3.8 and clang-3.8 are needed to support llvm_mode on Android, you can install using `apt-get install llvm-3.8 clang-3.8` on Ubuntu.
++
++## Build
++first, download and build the [Android open-source project (AOSP)][Android open-source project].
++then, download all the android-afl source code to AOSP folder:
++```
++cd AOSP
++git clone https://github.com/ele7enxxh/android-afl
++```
++to build:
++```
++cd android-afl
++mm -B
++```
++this will produce all afl binaries that you can use on host(e.g. Linux) or Android.
++
++## Usage
++
++afl-gcc/afl-g++, afl-clang/afl-clang++ and afl-clang-fast/afl-clang-fast++ are all supported in android-afl. Please refer to [android-afl-test][android-afl-test] for more details.
++
++### To fuzz
++
++if you want fuzz on host, you should use the afl-fuzz in the $(HOST\_OUT)/bin folder, otherwise you need to use the afl-fuzz in the $(target\_OUT)/bin folder. To ingore `bind_to_free_cpu`, the `AFL_NO_AFFINITY=1` should been set. Please refer to [AFl README][AFL README] for more details.
++
++## Note
++not all of the AFL tools have been tested on Android, but afl-fuzz has been working great on android-6.0.1 for me.
++
++[american-fuzzy-lop]: http://lcamtuf.coredump.cx/afl/
++[android-afl.patch]: https://github.com/ele7enxxh/android-afl/blob/master/android-patch/afl-2.33b-android.patch
++[Android open-source project]: https://source.android.com/
++[android-afl-test]: https://github.com/ele7enxxh/android-afl/tree/master/android-test
++[AFL README]: http://lcamtuf.coredump.cx/afl/README.txt

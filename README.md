@@ -40,7 +40,3 @@ not all of the AFL tools have been tested on Android, but afl-fuzz has been work
 [Android open-source project]: https://source.android.com/
 [android-afl-test]: https://github.com/ele7enxxh/android-afl/tree/master/android-test
 [AFL README]: http://lcamtuf.coredump.cx/afl/README.txt
-
-
-
-

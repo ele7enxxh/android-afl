@@ -51,7 +51,6 @@ include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := afl-fuzz.c
 LOCAL_CFLAGS := $(common_CFLAGS)
-LOCAL_LDLIBS := -ldl
 LOCAL_MODULE := afl-fuzz
 include $(BUILD_EXECUTABLE)
 
@@ -150,17 +149,22 @@ HOST_CLANG_CXX := clang++-3.8
 $(info Generating afl-llvm-pass.so)
 $(shell ($(HOST_CLANG_CXX) $(CLANG_CFL) -shared $(LOCAL_PATH)/llvm_mode/afl-llvm-pass.so.cc -o $(HELPER_PATH)/afl-llvm-pass.so $(CLANG_LFL)))
 
-#################################afl-llvm-rt#################################
+################################afl-llvm-rt#################################
 
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES := llvm_mode/afl-llvm-rt.o.c
 LOCAL_CLANG := true
+LOCAL_MULTILIB := both
 LOCAL_CC := /usr/bin/clang-3.8
 LOCAL_CFLAGS := $(common_CFLAGS)
 LOCAL_MODULE := afl-llvm-rt
+ifeq ($(TARGET_2ND_ARCH),)
 LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(TARGET_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt.o;
-
+else
+LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(TARGET_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt-64.o; \
+	cp -f $(TARGET_OUT_INTERMEDIATES)_$(TARGET_2ND_ARCH)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt.o;
+endif
 include $(BUILD_SHARED_LIBRARY)
 
 include $(CLEAR_VARS)

@@ -2,8 +2,9 @@
 #define _ANDROID_ASHMEM_H
 
 #include <fcntl.h>
+#include <linux/shm.h>
 #include <linux/ashmem.h>
-#include <sys/shm.h>
+#include <sys/ioctl.h>
 #include <sys/mman.h>
 
 #include <stdio.h>

@@ -52,7 +52,9 @@
 
 #include <sys/wait.h>
 #include <sys/time.h>
-#include <sys/shm.h>
+#ifndef __ANDROID__
+  #include <sys/shm.h>
+#endif
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/resource.h>

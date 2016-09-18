@@ -22,6 +22,7 @@ endif
 ifeq ($(TEST_GCC_HOST), true)
 export AFL_CC=$(HOST_CC)
 # export AFL_CXX=$(HOST_CXX)
+LOCAL_MULTILIB := 32
 export AFL_AS=$(HOST_TOOLCHAIN_PREFIX)as
 LOCAL_CLANG := false
 LOCAL_CC := afl-gcc
@@ -62,6 +63,19 @@ LOCAL_CLANG := true
 LOCAL_CC := afl-clang-fast
 # LOCAL_CXX := afl-clang-fast++
 LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt.o
+include $(BUILD_EXECUTABLE)
+endif
+
+# test afl-clang-fast/afl-clang-fast++ on aarch64/Android
+# to build: TEST_CLANG_FAST_AARCH64=true mm -B
+ifeq ($(TEST_CLANG_FAST_AARCH64), true)
+export AFL_CC=/usr/bin/clang-3.8
+# export AFL_CXX=/usr/bin/clang++-3.8
+LOCAL_MULTILIB := 64
+LOCAL_CLANG := true
+LOCAL_CC := afl-clang-fast
+# LOCAL_CXX := afl-clang-fast++
+LOCAL_LDFLAGS := $(HOST_OUT)/afl/afl-llvm-rt-64.o
 include $(BUILD_EXECUTABLE)
 endif
 

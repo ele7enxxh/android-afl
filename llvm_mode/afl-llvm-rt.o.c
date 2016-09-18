@@ -34,7 +34,9 @@
 #include <assert.h>
 
 #include <sys/mman.h>
-#include <sys/shm.h>
+#ifndef __ANDROID__
+  #include <sys/shm.h>
+#endif
 #include <sys/wait.h>
 #include <sys/types.h>
 
