@@ -1,6 +1,6 @@
 diff -urN a/afl-2.33b/afl-analyze.c b/afl-2.33b/afl-analyze.c
 --- a/afl-2.33b/afl-analyze.c	2016-08-04 01:52:58.000000000 +0800
-+++ b/afl-2.33b/afl-analyze.c	2016-09-12 15:10:02.243535000 +0800
++++ b/afl-2.33b/afl-analyze.c	2016-09-29 13:35:10.610429000 +0800
 @@ -21,6 +21,10 @@
  
  #define AFL_MAIN
@@ -25,7 +25,7 @@ diff -urN a/afl-2.33b/afl-analyze.c b/afl-2.33b/afl-analyze.c
  #include <sys/resource.h>
 diff -urN a/afl-2.33b/afl-as.c b/afl-2.33b/afl-as.c
 --- a/afl-2.33b/afl-as.c	2016-02-10 23:53:12.000000000 +0800
-+++ b/afl-2.33b/afl-as.c	2016-09-06 11:05:50.264384000 +0800
++++ b/afl-2.33b/afl-as.c	2016-09-29 13:35:10.610429000 +0800
 @@ -212,6 +212,111 @@
  }
  
@@ -156,7 +156,7 @@ diff -urN a/afl-2.33b/afl-as.c b/afl-2.33b/afl-as.c
  
 diff -urN a/afl-2.33b/afl-as.h b/afl-2.33b/afl-as.h
 --- a/afl-2.33b/afl-as.h	2016-07-05 04:08:29.000000000 +0800
-+++ b/afl-2.33b/afl-as.h	2016-09-06 11:16:28.124400000 +0800
++++ b/afl-2.33b/afl-as.h	2016-09-29 13:35:10.610429000 +0800
 @@ -104,6 +104,172 @@
  
   */
@@ -332,7 +332,7 @@ diff -urN a/afl-2.33b/afl-as.h b/afl-2.33b/afl-as.h
    "\n"
 diff -urN a/afl-2.33b/afl-fuzz.c b/afl-2.33b/afl-fuzz.c
 --- a/afl-2.33b/afl-fuzz.c	2016-08-20 14:40:05.000000000 +0800
-+++ b/afl-2.33b/afl-fuzz.c	2016-09-12 15:09:51.795534000 +0800
++++ b/afl-2.33b/afl-fuzz.c	2016-09-29 13:35:10.610429000 +0800
 @@ -26,6 +26,10 @@
  #define _GNU_SOURCE
  #define _FILE_OFFSET_BITS 64
@@ -381,7 +381,7 @@ diff -urN a/afl-2.33b/afl-fuzz.c b/afl-2.33b/afl-fuzz.c
    if (sync_id) fix_up_sync();
 diff -urN a/afl-2.33b/afl-gcc.c b/afl-2.33b/afl-gcc.c
 --- a/afl-2.33b/afl-gcc.c	2016-08-20 14:29:07.000000000 +0800
-+++ b/afl-2.33b/afl-gcc.c	2016-09-06 11:05:50.264384000 +0800
++++ b/afl-2.33b/afl-gcc.c	2016-09-29 13:35:10.610429000 +0800
 @@ -116,6 +116,8 @@
    u8 m32_set = 0;
  #endif
@@ -443,7 +443,7 @@ diff -urN a/afl-2.33b/afl-gcc.c b/afl-2.33b/afl-gcc.c
    edit_params(argc, argv);
 diff -urN a/afl-2.33b/afl-gotcpu.c b/afl-2.33b/afl-gotcpu.c
 --- a/afl-2.33b/afl-gotcpu.c	2016-04-28 06:31:44.000000000 +0800
-+++ b/afl-2.33b/afl-gotcpu.c	2016-09-06 11:05:50.264384000 +0800
++++ b/afl-2.33b/afl-gotcpu.c	2016-09-29 13:35:10.610429000 +0800
 @@ -28,6 +28,10 @@
  #define AFL_MAIN
  #define _GNU_SOURCE
@@ -457,7 +457,7 @@ diff -urN a/afl-2.33b/afl-gotcpu.c b/afl-2.33b/afl-gotcpu.c
  #include <unistd.h>
 diff -urN a/afl-2.33b/afl-showmap.c b/afl-2.33b/afl-showmap.c
 --- a/afl-2.33b/afl-showmap.c	2016-08-04 01:52:48.000000000 +0800
-+++ b/afl-2.33b/afl-showmap.c	2016-09-12 15:10:27.507535000 +0800
++++ b/afl-2.33b/afl-showmap.c	2016-09-29 13:35:10.610429000 +0800
 @@ -23,6 +23,10 @@
  
  #define AFL_MAIN
@@ -482,7 +482,7 @@ diff -urN a/afl-2.33b/afl-showmap.c b/afl-2.33b/afl-showmap.c
  #include <sys/resource.h>
 diff -urN a/afl-2.33b/afl-tmin.c b/afl-2.33b/afl-tmin.c
 --- a/afl-2.33b/afl-tmin.c	2016-08-04 01:53:28.000000000 +0800
-+++ b/afl-2.33b/afl-tmin.c	2016-09-12 15:10:51.947536000 +0800
++++ b/afl-2.33b/afl-tmin.c	2016-09-29 13:35:10.610429000 +0800
 @@ -21,6 +21,10 @@
  
  #define AFL_MAIN
@@ -507,7 +507,7 @@ diff -urN a/afl-2.33b/afl-tmin.c b/afl-2.33b/afl-tmin.c
  #include <sys/resource.h>
 diff -urN a/afl-2.33b/android-ashmem.h b/afl-2.33b/android-ashmem.h
 --- a/afl-2.33b/android-ashmem.h	1970-01-01 08:00:00.000000000 +0800
-+++ b/afl-2.33b/android-ashmem.h	2016-09-12 15:11:10.599536000 +0800
++++ b/afl-2.33b/android-ashmem.h	2016-09-29 13:35:10.610429000 +0800
 @@ -0,0 +1,70 @@
 +#ifndef _ANDROID_ASHMEM_H
 +#define _ANDROID_ASHMEM_H
@@ -581,7 +581,7 @@ diff -urN a/afl-2.33b/android-ashmem.h b/afl-2.33b/android-ashmem.h
 +#endif
 diff -urN a/afl-2.33b/Android.mk b/afl-2.33b/Android.mk
 --- a/afl-2.33b/Android.mk	1970-01-01 08:00:00.000000000 +0800
-+++ b/afl-2.33b/Android.mk	2016-09-18 14:44:19.731377000 +0800
++++ b/afl-2.33b/Android.mk	2016-09-29 13:35:10.610429000 +0800
 @@ -0,0 +1,189 @@
 +LOCAL_PATH := $(call my-dir)
 +
@@ -774,7 +774,7 @@ diff -urN a/afl-2.33b/Android.mk b/afl-2.33b/Android.mk
 +include $(BUILD_HOST_SHARED_LIBRARY)
 diff -urN a/afl-2.33b/android-test/Android.mk b/afl-2.33b/android-test/Android.mk
 --- a/afl-2.33b/android-test/Android.mk	1970-01-01 08:00:00.000000000 +0800
-+++ b/afl-2.33b/android-test/Android.mk	2016-09-18 14:42:37.699378000 +0800
++++ b/afl-2.33b/android-test/Android.mk	2016-09-29 13:35:10.610429000 +0800
 @@ -0,0 +1,106 @@
 +LOCAL_PATH := $(call my-dir)
 +
@@ -885,7 +885,7 @@ diff -urN a/afl-2.33b/android-test/Android.mk b/afl-2.33b/android-test/Android.m
 \ No newline at end of file
 diff -urN a/afl-2.33b/android-test/crash.c b/afl-2.33b/android-test/crash.c
 --- a/afl-2.33b/android-test/crash.c	1970-01-01 08:00:00.000000000 +0800
-+++ b/afl-2.33b/android-test/crash.c	2016-09-06 11:08:52.232389000 +0800
++++ b/afl-2.33b/android-test/crash.c	2016-09-29 13:35:10.614429000 +0800
 @@ -0,0 +1,22 @@
 +#include <stdio.h>
 +#include <stdlib.h>
@@ -912,7 +912,7 @@ diff -urN a/afl-2.33b/android-test/crash.c b/afl-2.33b/android-test/crash.c
 \ No newline at end of file
 diff -urN a/afl-2.33b/LICENSE b/afl-2.33b/LICENSE
 --- a/afl-2.33b/LICENSE	1970-01-01 08:00:00.000000000 +0800
-+++ b/afl-2.33b/LICENSE	2016-09-06 11:05:50.264384000 +0800
++++ b/afl-2.33b/LICENSE	2016-09-29 13:35:10.610429000 +0800
 @@ -0,0 +1,201 @@
 +                                 Apache License
 +                           Version 2.0, January 2004
@@ -1115,9 +1115,28 @@ diff -urN a/afl-2.33b/LICENSE b/afl-2.33b/LICENSE
 +   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 +   See the License for the specific language governing permissions and
 +   limitations under the License.
+diff -urN a/afl-2.33b/llvm_mode/afl-clang-fast.c b/afl-2.33b/llvm_mode/afl-clang-fast.c
+--- a/afl-2.33b/llvm_mode/afl-clang-fast.c	2016-08-23 14:53:27.000000000 +0800
++++ b/afl-2.33b/llvm_mode/afl-clang-fast.c	2016-09-29 13:36:05.338430000 +0800
+@@ -276,6 +276,7 @@
+       cc_params[cc_par_cnt++] = "none";
+     }
+ 
++#ifndef ANDROID
+     switch (bit_mode) {
+ 
+       case 0:
+@@ -299,6 +300,7 @@
+         break;
+ 
+     }
++#endif
+ 
+   }
+ 
 diff -urN a/afl-2.33b/llvm_mode/afl-llvm-rt.o.c b/afl-2.33b/llvm_mode/afl-llvm-rt.o.c
 --- a/afl-2.33b/llvm_mode/afl-llvm-rt.o.c	2016-08-09 05:38:18.000000000 +0800
-+++ b/afl-2.33b/llvm_mode/afl-llvm-rt.o.c	2016-09-12 15:11:19.671537000 +0800
++++ b/afl-2.33b/llvm_mode/afl-llvm-rt.o.c	2016-09-29 13:35:10.618429000 +0800
 @@ -19,6 +19,10 @@
  
  */
@@ -1142,7 +1161,7 @@ diff -urN a/afl-2.33b/llvm_mode/afl-llvm-rt.o.c b/afl-2.33b/llvm_mode/afl-llvm-r
  
 diff -urN a/afl-2.33b/README.md b/afl-2.33b/README.md
 --- a/afl-2.33b/README.md	1970-01-01 08:00:00.000000000 +0800
-+++ b/afl-2.33b/README.md	2016-09-18 14:51:28.691371809 +0800
++++ b/afl-2.33b/README.md	2016-09-29 13:35:10.610429000 +0800
 @@ -0,0 +1,42 @@
 +# android-afl
 +

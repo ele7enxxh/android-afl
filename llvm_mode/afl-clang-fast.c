@@ -276,6 +276,7 @@ static void edit_params(u32 argc, char** argv) {
       cc_params[cc_par_cnt++] = "none";
     }
 
+#ifndef ANDROID
     switch (bit_mode) {
 
       case 0:
@@ -299,6 +300,7 @@ static void edit_params(u32 argc, char** argv) {
         break;
 
     }
+#endif
 
   }
 
