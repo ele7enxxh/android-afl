@@ -50,7 +50,7 @@ export AFL_CC=$(CLANG)
 export AFL_AS=$(HOST_TOOLCHAIN_PREFIX)as
 LOCAL_CLANG := true
 LOCAL_CC := afl-clang
-# LOCAL_CC := afl-clang++
+# LOCAL_CXX := afl-clang++
 include $(BUILD_HOST_EXECUTABLE)
 endif
 
