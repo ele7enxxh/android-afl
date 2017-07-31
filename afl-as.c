@@ -56,7 +56,8 @@ static u8*  modified_file;      /* Instrumented file for the real 'as'  */
 static u8   be_quiet,           /* Quiet mode (no stderr output)        */
             clang_mode,         /* Running in clang mode?               */
             pass_thru,          /* Just pass data through?              */
-            just_version;       /* Just show version?                   */
+            just_version,       /* Just show version?                   */
+            sanitizer;          /* Using ASAN / MSAN                    */
 
 static u32  inst_ratio = 100,   /* Instrumentation probability (%)      */
             as_par_cnt = 1;     /* Number of params to 'as'             */
@@ -209,111 +210,6 @@ wrap_things_up:
   as_params[as_par_cnt++] = modified_file;
   as_params[as_par_cnt]   = NULL;
 
-}
-
-
-static void add_instrumentation_arm(void)
-{
-  static u8 line[MAX_LINE];
-
-  FILE *inf, *outf;
-  s32 outfd;
-  u32 ins_lines = 0;
-  u8 instr_ok = 0, instrument_next = 0;
-  u8 *ptr, *reg;
-
-  if (input_file) {
-    inf = fopen(input_file, "r");
-    if (!inf) {
-      PFATAL("Unable to read '%s'", input_file);
-    }
-  }
-  else {
-    inf = stdin;
-  }
-
-  outfd = open(modified_file, O_WRONLY | O_EXCL | O_CREAT, 0600);
-  if (outfd < 0) {
-    PFATAL("Unable to write to '%s'", modified_file);
-  }
-  outf = fdopen(outfd, "w");
-  if (!outf) {
-    PFATAL("fdopen() failed");
-  }
-
-  while (fgets(line, MAX_LINE, inf)) {
-    if (instrument_next) {
-        if (strncmp(line, "\t.word", 6) && strncmp(line, "\t.byte", 6) && strncmp(line, "\t.2byte", 7) && strncmp(line, "\tb\t", 3)) {
-          fprintf(outf, trampoline_fmt_arm, R(MAP_SIZE));
-          ++ins_lines;
-        }
-      instrument_next = 0;
-    }
-
-    if (instr_ok && !strncmp(line, "\tldr", 4) && (ptr = strstr(line, ", .L"))) {
-      reg = strchr(line + 4, '\t');
-      ptr[0] = '\0';
-
-      fprintf(outf, "%s, =%s", line, ptr + 2);
-      fprintf(outf, "%s, [%s]\n", line, reg + 1);
-
-      continue;
-    }
-
-    if (instr_ok &&
-        ((!strncmp(line, "\tfldd", 5) || !strncmp(line, "\tvldr", 5)) && (ptr = strstr(line, ", .L")))) {
-      ptr[0] = 0;
-
-      fprintf(outf, "\tpush {r12}\n");
-      fprintf(outf, "\tldr r12, =%s", ptr + 2);
-      fprintf(outf, "%s, [r12]\n", line);
-      fprintf(outf, "\tpop {r12}\n");
-
-      continue;
-
-    }
-
-    fputs(line, outf);
-
-    if (!strncmp(line, "\t.fnstart", 9)) {
-      instr_ok = 1;
-      instrument_next = 1;
-      continue;
-    }
-
-    if (!strncmp(line, "\t.fnend", 7)) {
-      instr_ok = 0;
-      continue;
-    }
-
-    if (instr_ok) {
-      if (!strncmp(line, ".L", 2) && isdigit(line[2])) {
-        instrument_next = 1;
-      }
-      else if (line[0] == '\t' && line[1] == 'b' && strncmp(line, "\tbic", 4) && strncmp(line, "\tb\t", 3) && strncmp(line, "\tbl\t", 4) && strncmp(line, "\tblx\t", 5)) {
-        instrument_next = 1;
-      }
-    }    
-  }
-
-  if (ins_lines) {
-    fputs(main_payload_arm, outf);
-  }
-
-  if (input_file) {
-    fclose(inf);
-  }
-
-  fclose(outf);
-
-  if (!be_quiet) {
-
-    if (!ins_lines) WARNF("No instrumentation targets found%s.",
-                          pass_thru ? " (pass-thru mode)" : "");
-    else OKF("Instrumented %u locations (%s-bit, arm mode, ratio %u%%).",
-             ins_lines, getenv("AFL_HARDEN") ? "hardened" : "non-hardened",
-             inst_ratio);
-  }
 }
 
 
@@ -559,7 +455,8 @@ static void add_instrumentation(void) {
                           pass_thru ? " (pass-thru mode)" : "");
     else OKF("Instrumented %u locations (%s-bit, %s mode, ratio %u%%).",
              ins_lines, use_64bit ? "64" : "32",
-             getenv("AFL_HARDEN") ? "hardened" : "non-hardened",
+             getenv("AFL_HARDEN") ? "hardened" : 
+             (sanitizer ? "ASAN/MSAN" : "non-hardened"),
              inst_ratio);
  
   }
@@ -626,16 +523,12 @@ int main(int argc, char** argv) {
      ASAN-specific branches. But we can probabilistically compensate for
      that... */
 
-  if (getenv("AFL_USE_ASAN") || getenv("AFL_USE_MSAN")) inst_ratio /= 3;
-
-  if (!just_version) {
-    if (getenv("AFL_USE_ARM")) {
-      add_instrumentation_arm();
-    }
-    else {
-      add_instrumentation();
-    }
+  if (getenv("AFL_USE_ASAN") || getenv("AFL_USE_MSAN")) {
+    sanitizer = 1;
+    inst_ratio /= 3;
   }
+
+  if (!just_version) add_instrumentation();
 
   if (!(pid = fork())) {
 

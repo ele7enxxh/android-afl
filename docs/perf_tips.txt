@@ -94,7 +94,11 @@ equivalent calls; for example, tar can invoke external decompression tools
 when it decides that the input file is a compressed archive.
 
 Some programs may also intentionally call sleep(), usleep(), or nanosleep();
-vim is a good example of that.
+vim is a good example of that. Other programs may attempt fsync() and so on.
+There are third-party libraries that make it easy to get rid of such code,
+e.g.:
+
+  https://launchpad.net/libeatmydata
 
 In programs that are slow due to unavoidable initialization overhead, you may
 want to try the LLVM deferred forkserver mode (see llvm_mode/README.llvm),
@@ -166,6 +170,12 @@ There are several OS-level factors that may affect fuzzing speed:
 
     On other systems, the impact of CPU scaling will be different; when fuzzing,
     use OS-specific tools to find out if all cores are running at full speed.
+
+  - Transparent huge pages. Some allocators, such as jemalloc, can incur a
+    heavy fuzzing penalty when transparent huge pages (THP) are enabled in the
+    kernel. You can disable this via:
+
+    echo never > /sys/kernel/mm/transparent_hugepage/enabled
 
   - Suboptimal scheduling strategies. The significance of this will vary from
     one target to another, but on Linux, you may want to make sure that the

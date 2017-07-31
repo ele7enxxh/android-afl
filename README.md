@@ -19,8 +19,9 @@ git clone https://github.com/ele7enxxh/android-afl
 ```
 to build:
 ```
+. build/envsetup.sh
 cd android-afl
-mm -B
+mm
 ```
 this will produce all afl binaries that you can use on host(e.g. Linux) or Android.
 

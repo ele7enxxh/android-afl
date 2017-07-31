@@ -116,8 +116,6 @@ static void edit_params(u32 argc, char** argv) {
   u8 m32_set = 0;
 #endif
 
-  u8 arm_set = 0;
-
   cc_params = ck_alloc((argc + 128) * sizeof(u8*));
 
   name = strrchr(argv[0], '/');
@@ -179,26 +177,8 @@ static void edit_params(u32 argc, char** argv) {
 
   }
 
-  if (!strncmp(cc_params[0], "arm", 3)) {
-    arm_set = 1;
-  }
-
   while (--argc) {
     u8* cur = *(++argv);
-
-    if (!strcmp(cur, "-mthumb")) {
-      arm_set = 1;
-      WARNF("The thumb instrumentation is not supported, we will ingore -mthumb.");
-      continue;
-    }
-
-    if (!strcmp(cur, "-marm")) {
-      arm_set = 1;
-    }
-    
-    if (!strcmp(cur, "arm-linux-androideabi")) {
-      arm_set = 1;
-    }
 
     if (!strncmp(cur, "-B", 2)) {
 
@@ -253,7 +233,7 @@ static void edit_params(u32 argc, char** argv) {
       FATAL("ASAN and MSAN are mutually exclusive");
 
     if (getenv("AFL_HARDEN"))
-      FATAL("ABSAN and AFL_HARDEN are mutually exclusive");
+      FATAL("ASAN and AFL_HARDEN are mutually exclusive");
 
     cc_params[cc_par_cnt++] = "-U_FORTIFY_SOURCE";
     cc_params[cc_par_cnt++] = "-fsanitize=address";
@@ -270,13 +250,6 @@ static void edit_params(u32 argc, char** argv) {
     cc_params[cc_par_cnt++] = "-fsanitize=memory";
 
 
-  }
-
-  if (arm_set) {
-    setenv("AFL_USE_ARM", "1", 1);
-  }
-  else {
-    unsetenv("AFL_USE_ARM");
   }
 
   if (!getenv("AFL_DONT_OPTIMIZE")) {
@@ -314,6 +287,8 @@ static void edit_params(u32 argc, char** argv) {
     cc_params[cc_par_cnt++] = "-fno-builtin-strcasecmp";
     cc_params[cc_par_cnt++] = "-fno-builtin-strncasecmp";
     cc_params[cc_par_cnt++] = "-fno-builtin-memcmp";
+    cc_params[cc_par_cnt++] = "-fno-builtin-strstr";
+    cc_params[cc_par_cnt++] = "-fno-builtin-strcasestr";
 
   }
 

@@ -19,10 +19,6 @@
 
 */
 
-#ifdef __ANDROID__
-   #include "android-ashmem.h"
-#endif
-
 #include "../config.h"
 #include "../types.h"
 
@@ -34,11 +30,19 @@
 #include <assert.h>
 
 #include <sys/mman.h>
-#ifndef __ANDROID__
-  #include <sys/shm.h>
-#endif
+#include <sys/shm.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+
+/* This is a somewhat ugly hack for the experimental 'trace-pc-guard' mode.
+   Basically, we need to make sure that the forkserver is initialized after
+   the LLVM-generated runtime initialization pass, not before. */
+
+#ifdef USE_TRACE_PC
+#  define CONST_PRIO 5
+#else
+#  define CONST_PRIO 0
+#endif /* ^USE_TRACE_PC */
 
 
 /* Globals needed by the injected instrumentation. The __afl_area_initial region
@@ -240,16 +244,11 @@ void __afl_manual_init(void) {
 }
 
 
-static void __afl_trace_pc_init(void);
-
-
 /* Proper initialization routine. */
 
-__attribute__((constructor(0))) void __afl_auto_init(void) {
+__attribute__((constructor(CONST_PRIO))) void __afl_auto_init(void) {
 
   is_persistent = !!getenv(PERSIST_ENV_VAR);
-
-  __afl_trace_pc_init();
 
   if (getenv(DEFER_ENV_VAR)) return;
 
@@ -258,63 +257,50 @@ __attribute__((constructor(0))) void __afl_auto_init(void) {
 }
 
 
-/* The following stuff deals with support for -fsanitize-coverage=bb,trace-pc.
+/* The following stuff deals with supporting -fsanitize-coverage=trace-pc-guard.
    It remains non-operational in the traditional, plugin-backed LLVM mode.
-   For more info about 'trace-pc', see README.llvm.
+   For more info about 'trace-pc-guard', see README.llvm.
 
-   The first function (__sanitizer_cov_trace_pc) is called back on every
-   basic block. Since LLVM is not giving us any stable IDs for the blocks,
-   we use 12 least significant bits of the return address (which should be
-   stable even with ASLR; more significant bits may vary across runs).
+   The first function (__sanitizer_cov_trace_pc_guard) is called back on every
+   edge (as opposed to every basic block). */
 
-   Since MAP_SIZE is usually larger than 12 bits, we "pad" it by combining
-   left-shifted __afl_prev_loc. This gives us a theoretical maximum of 24 
-   bits, although instruction alignment likely reduces this somewhat. */
-
-
-static u32 inst_ratio_scaled = MIN(4096, MAP_SIZE);
-
-void __sanitizer_cov_trace_pc(void) {
-
-  u32 cur = ((u32)__builtin_return_address(0)) & MIN(4095, MAP_SIZE - 1);
-
-  if (cur > inst_ratio_scaled) return;
-
-  __afl_area_ptr[cur ^ __afl_prev_loc]++;
-
-#if MAP_SIZE_POW2 > 12
-  __afl_prev_loc = cur << (MAP_SIZE_POW2 - 12);
-#else
-  __afl_prev_loc = cur >> 1;
-#endif /* ^MAP_SIZE_POW2 > 12 */
-
+void __sanitizer_cov_trace_pc_guard(uint32_t* guard) {
+  __afl_area_ptr[*guard]++;
 }
 
 
-/* Init callback. Unfortunately, LLVM does not support compile-time
-   instrumentation density scaling, at least not just yet. This means
-   taking some performance hit by checking inst_ratio_scaled at runtime. */
+/* Init callback. Populates instrumentation IDs. Note that we're using
+   ID of 0 as a special value to indicate non-instrumented bits. That may
+   still touch the bitmap, but in a fairly harmless way. */
 
-static void __afl_trace_pc_init(void) {
+void __sanitizer_cov_trace_pc_guard_init(uint32_t* start, uint32_t* stop) {
 
-  u8* x = getenv("AFL_INST_RATIO");
+  u32 inst_ratio = 100;
+  u8* x;
 
-  if (!x) return;
+  if (start == stop || *start) return;
 
-  inst_ratio_scaled = atoi(x);
+  x = getenv("AFL_INST_RATIO");
+  if (x) inst_ratio = atoi(x);
 
-  if (!inst_ratio_scaled || inst_ratio_scaled > 100) {
+  if (!inst_ratio || inst_ratio > 100) {
     fprintf(stderr, "[-] ERROR: Invalid AFL_INST_RATIO (must be 1-100).\n");
     abort();
   }
 
-  inst_ratio_scaled = inst_ratio_scaled * MIN(4096, MAP_SIZE) / 100;
+  /* Make sure that the first element in the range is always set - we use that
+     to avoid duplicate calls (which can happen as an artifact of the underlying
+     implementation in LLVM). */
+
+  *(start++) = R(MAP_SIZE - 1) + 1;
+
+  while (start < stop) {
+
+    if (R(100) < inst_ratio) *start = R(MAP_SIZE - 1) + 1;
+    else *start = 0;
+
+    start++;
+
+  }
 
 }
-
-
-/* Work around a short-lived bug in LLVM with -fsanitize-coverage=trace-pc. */
-
-void __sanitizer_cov_module_init(void) __attribute__((weak));
-void __sanitizer_cov_module_init(void) { }
-
