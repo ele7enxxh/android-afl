@@ -2,7 +2,11 @@
 #define _ANDROID_ASHMEM_H
 
 #include <fcntl.h>
-//#include <linux/shm.h>
+#include <linux/shm.h>
+#include <linux/ashmem.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+
 #if __ANDROID_API__ >= 26
 #define shmat bionic_shmat
 #define shmctl bionic_shmctl
@@ -14,10 +18,6 @@
 #undef shmctl
 #undef shmdt
 #undef shmget
-#include <linux/ashmem.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-
 #include <stdio.h>
 
 #define ASHMEM_DEVICE	"/dev/ashmem"
@@ -46,7 +46,6 @@ static inline int shmget (key_t __key, size_t __size, int __shmflg)
 
 	sprintf(ourkey,"%d",__key);
 	ret = ioctl(fd, ASHMEM_SET_NAME, ourkey);
-
 	if (ret < 0)
 		goto error;
 
