@@ -104,6 +104,50 @@
 
  */
 
+static const u8* trampoline_fmt_32 =
+
+  "\n"
+  "/* --- AFL TRAMPOLINE (32-BIT) --- */\n"
+  "\n"
+  ".align 4\n"
+  "\n"
+  "leal -16(%%esp), %%esp\n"
+  "movl %%edi,  0(%%esp)\n"
+  "movl %%edx,  4(%%esp)\n"
+  "movl %%ecx,  8(%%esp)\n"
+  "movl %%eax, 12(%%esp)\n"
+  "movl $0x%08x, %%ecx\n"
+  "call __afl_maybe_log\n"
+  "movl 12(%%esp), %%eax\n"
+  "movl  8(%%esp), %%ecx\n"
+  "movl  4(%%esp), %%edx\n"
+  "movl  0(%%esp), %%edi\n"
+  "leal 16(%%esp), %%esp\n"
+  "\n"
+  "/* --- END --- */\n"
+  "\n";
+
+static const u8* trampoline_fmt_64 =
+
+  "\n"
+  "/* --- AFL TRAMPOLINE (64-BIT) --- */\n"
+  "\n"
+  ".align 4\n"
+  "\n"
+  "leaq -(128+24)(%%rsp), %%rsp\n"
+  "movq %%rdx,  0(%%rsp)\n"
+  "movq %%rcx,  8(%%rsp)\n"
+  "movq %%rax, 16(%%rsp)\n"
+  "movq $0x%08x, %%rcx\n"
+  "call __afl_maybe_log\n"
+  "movq 16(%%rsp), %%rax\n"
+  "movq  8(%%rsp), %%rcx\n"
+  "movq  0(%%rsp), %%rdx\n"
+  "leaq (128+24)(%%rsp), %%rsp\n"
+  "\n"
+  "/* --- END --- */\n"
+  "\n";
+
 static const u8 *trampoline_fmt_arm = 
   "\n"
   "/* --- AFL TRAMPOLINE --- */\n"
@@ -268,50 +312,6 @@ static const u8 *main_payload_arm =
   "\t.string \"" SHM_ENV_VAR "\"\n"
   "\n"
   "/* --- END -- */\n"
-  "\n";
-
-static const u8* trampoline_fmt_32 =
-
-  "\n"
-  "/* --- AFL TRAMPOLINE (32-BIT) --- */\n"
-  "\n"
-  ".align 4\n"
-  "\n"
-  "leal -16(%%esp), %%esp\n"
-  "movl %%edi,  0(%%esp)\n"
-  "movl %%edx,  4(%%esp)\n"
-  "movl %%ecx,  8(%%esp)\n"
-  "movl %%eax, 12(%%esp)\n"
-  "movl $0x%08x, %%ecx\n"
-  "call __afl_maybe_log\n"
-  "movl 12(%%esp), %%eax\n"
-  "movl  8(%%esp), %%ecx\n"
-  "movl  4(%%esp), %%edx\n"
-  "movl  0(%%esp), %%edi\n"
-  "leal 16(%%esp), %%esp\n"
-  "\n"
-  "/* --- END --- */\n"
-  "\n";
-
-static const u8* trampoline_fmt_64 =
-
-  "\n"
-  "/* --- AFL TRAMPOLINE (64-BIT) --- */\n"
-  "\n"
-  ".align 4\n"
-  "\n"
-  "leaq -(128+24)(%%rsp), %%rsp\n"
-  "movq %%rdx,  0(%%rsp)\n"
-  "movq %%rcx,  8(%%rsp)\n"
-  "movq %%rax, 16(%%rsp)\n"
-  "movq $0x%08x, %%rcx\n"
-  "call __afl_maybe_log\n"
-  "movq 16(%%rsp), %%rax\n"
-  "movq  8(%%rsp), %%rcx\n"
-  "movq  0(%%rsp), %%rdx\n"
-  "leaq (128+24)(%%rsp), %%rsp\n"
-  "\n"
-  "/* --- END --- */\n"
   "\n";
 
 static const u8* main_payload_32 = 

@@ -8,7 +8,7 @@ android-afl is a modified version of AFL that supports fuzzing on Android, the S
 
 ## Requirements
 * Android source code(e.g. 6.0.1) is needed.
-* llvm-3.8 and clang-3.8 are needed to support llvm_mode on Android, you can install using `apt-get install llvm-3.8 clang-3.8` on Ubuntu.
+* llvm-5.0 and clang-5.0 are needed to provide support for llvm_mode on Android, you can install using `apt-get install llvm clang` on Ubuntu.
 
 ## Build
 first, download and build the [Android open-source project (AOSP)][Android open-source project].
@@ -19,8 +19,9 @@ git clone https://github.com/ele7enxxh/android-afl
 ```
 to build:
 ```
+. build/envsetup.sh
 cd android-afl
-mm -B
+mm
 ```
 this will produce all afl binaries that you can use on host(e.g. Linux) or Android.
 
@@ -40,3 +41,10 @@ not all of the AFL tools have been tested on Android, but afl-fuzz has been work
 [Android open-source project]: https://source.android.com/
 [android-afl-test]: https://github.com/ele7enxxh/android-afl/tree/master/android-test
 [AFL README]: http://lcamtuf.coredump.cx/afl/README.txt
+
+
+```
+adb devices
+adb push ../out/target/product/generic/system/bin/ /data/local/tmp
+
+```

@@ -7,6 +7,17 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 
+#if __ANDROID_API__ >= 26
+#define shmat bionic_shmat
+#define shmctl bionic_shmctl
+#define shmdt bionic_shmdt
+#define shmget bionic_shmget
+#endif
+ #include <sys/shm.h>
+#undef shmat
+#undef shmctl
+#undef shmdt
+#undef shmget
 #include <stdio.h>
 
 #define ASHMEM_DEVICE	"/dev/ashmem"
@@ -27,14 +38,14 @@ static inline int shmctl(int __shmid, int __cmd, struct shmid_ds *__buf)
 static inline int shmget (key_t __key, size_t __size, int __shmflg)
 {
 	int fd,ret;
-	char key[11];
+	char ourkey[11];
 
 	fd = open(ASHMEM_DEVICE, O_RDWR);
 	if (fd < 0)
 		return fd;
 
-	sprintf(key,"%d",__key);
-	ret = ioctl(fd, ASHMEM_SET_NAME, key);
+	sprintf(ourkey,"%d",__key);
+	ret = ioctl(fd, ASHMEM_SET_NAME, ourkey);
 	if (ret < 0)
 		goto error;
 

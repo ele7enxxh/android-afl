@@ -44,9 +44,7 @@
 
 #include <sys/wait.h>
 #include <sys/time.h>
-#ifndef __ANDROID__
-  #include <sys/shm.h>
-#endif
+#include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/resource.h>
@@ -664,14 +662,14 @@ static void set_up_environment(void) {
 
     u8* use_dir = ".";
 
-    if (!access(use_dir, R_OK | W_OK | X_OK)) {
+    if (access(use_dir, R_OK | W_OK | X_OK)) {
 
       use_dir = getenv("TMPDIR");
       if (!use_dir) use_dir = "/tmp";
 
-      prog_in = alloc_printf("%s/.afl-tmin-temp-%u", use_dir, getpid());
-
     }
+
+    prog_in = alloc_printf("%s/.afl-analyze-temp-%u", use_dir, getpid());
 
   }
 

@@ -56,7 +56,8 @@ static u8*  modified_file;      /* Instrumented file for the real 'as'  */
 static u8   be_quiet,           /* Quiet mode (no stderr output)        */
             clang_mode,         /* Running in clang mode?               */
             pass_thru,          /* Just pass data through?              */
-            just_version;       /* Just show version?                   */
+            just_version,       /* Just show version?                   */
+            sanitizer;          /* Using ASAN / MSAN                    */
 
 static u32  inst_ratio = 100,   /* Instrumentation probability (%)      */
             as_par_cnt = 1;     /* Number of params to 'as'             */
@@ -212,6 +213,9 @@ wrap_things_up:
 }
 
 
+/* Process input file, generate modified_file. Insert instrumentation in all
+   the appropriate places. */
+
 static void add_instrumentation_arm(void)
 {
   static u8 line[MAX_LINE];
@@ -293,7 +297,7 @@ static void add_instrumentation_arm(void)
       else if (line[0] == '\t' && line[1] == 'b' && strncmp(line, "\tbic", 4) && strncmp(line, "\tb\t", 3) && strncmp(line, "\tbl\t", 4) && strncmp(line, "\tblx\t", 5)) {
         instrument_next = 1;
       }
-    }    
+    }
   }
 
   if (ins_lines) {
@@ -315,10 +319,6 @@ static void add_instrumentation_arm(void)
              inst_ratio);
   }
 }
-
-
-/* Process input file, generate modified_file. Insert instrumentation in all
-   the appropriate places. */
 
 static void add_instrumentation(void) {
 
@@ -559,7 +559,8 @@ static void add_instrumentation(void) {
                           pass_thru ? " (pass-thru mode)" : "");
     else OKF("Instrumented %u locations (%s-bit, %s mode, ratio %u%%).",
              ins_lines, use_64bit ? "64" : "32",
-             getenv("AFL_HARDEN") ? "hardened" : "non-hardened",
+             getenv("AFL_HARDEN") ? "hardened" : 
+             (sanitizer ? "ASAN/MSAN" : "non-hardened"),
              inst_ratio);
  
   }
@@ -626,7 +627,10 @@ int main(int argc, char** argv) {
      ASAN-specific branches. But we can probabilistically compensate for
      that... */
 
-  if (getenv("AFL_USE_ASAN") || getenv("AFL_USE_MSAN")) inst_ratio /= 3;
+  if (getenv("AFL_USE_ASAN") || getenv("AFL_USE_MSAN")) {
+    sanitizer = 1;
+    inst_ratio /= 3;
+  }
 
   if (!just_version) {
     if (getenv("AFL_USE_ARM")) {

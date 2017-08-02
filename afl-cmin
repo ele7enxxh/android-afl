@@ -126,24 +126,28 @@ fi
 # Do a sanity check to discourage the use of /tmp, since we can't really
 # handle this safely from a shell script.
 
-echo "$IN_DIR" | grep -qE '^(/var)?/tmp/'
-T1="$?"
+if [ "$AFL_ALLOW_TMP" = "" ]; then
 
-echo "$TARGET_BIN" | grep -qE '^(/var)?/tmp/'
-T2="$?"
+  echo "$IN_DIR" | grep -qE '^(/var)?/tmp/'
+  T1="$?"
 
-echo "$OUT_DIR" | grep -qE '^(/var)?/tmp/'
-T3="$?"
+  echo "$TARGET_BIN" | grep -qE '^(/var)?/tmp/'
+  T2="$?"
 
-echo "$STDIN_FILE" | grep -qE '^(/var)?/tmp/'
-T4="$?"
+  echo "$OUT_DIR" | grep -qE '^(/var)?/tmp/'
+  T3="$?"
 
-echo "$PWD" | grep -qE '^(/var)?/tmp/'
-T5="$?"
+  echo "$STDIN_FILE" | grep -qE '^(/var)?/tmp/'
+  T4="$?"
 
-if [ "$T1" = "0" -o "$T2" = "0" -o "$T3" = "0" -o "$T4" = "0" -o "$T5" = "0" ]; then
-  echo "[-] Error: do not use this script in /tmp or /var/tmp." 1>&2
-  exit 1
+  echo "$PWD" | grep -qE '^(/var)?/tmp/'
+  T5="$?"
+
+  if [ "$T1" = "0" -o "$T2" = "0" -o "$T3" = "0" -o "$T4" = "0" -o "$T5" = "0" ]; then
+    echo "[-] Error: do not use this script in /tmp or /var/tmp." 1>&2
+    exit 1
+  fi
+
 fi
 
 # If @@ is specified, but there's no -f, let's come up with a temporary input
@@ -240,12 +244,22 @@ fi
 IN_COUNT=$((`ls -- "$IN_DIR" 2>/dev/null | wc -l`))
 
 if [ "$IN_COUNT" = "0" ]; then
-  echo "No inputs in the target directory - nothing to be done."
+  echo "[+] Hmm, no inputs in the target directory. Nothing to be done."
   rm -rf "$TRACE_DIR"
   exit 1
 fi
 
 FIRST_FILE=`ls "$IN_DIR" | head -1`
+
+# Make sure that we're not dealing with a directory.
+
+if [ -d "$IN_DIR/$FIRST_FILE" ]; then
+  echo "[-] Error: The target directory contains subdirectories - please fix." 1>&2
+  rm -rf "$TRACE_DIR"
+  exit 1
+fi
+
+# Check for the more efficient way to copy files...
 
 if ln "$IN_DIR/$FIRST_FILE" "$TRACE_DIR/.link_test" 2>/dev/null; then
   CP_TOOL=ln
@@ -384,7 +398,7 @@ sort -k1,1 -s -u "$TRACE_DIR/.candidate_list" | \
   sed 's/^/BEST_FILE[/;s/ /]="/;s/$/"/' >"$TRACE_DIR/.candidate_script"
 
 if [ ! -s "$TRACE_DIR/.candidate_script" ]; then
-  echo "[-] Error: no traces obtained from test cases, check syntax!"
+  echo "[-] Error: no traces obtained from test cases, check syntax!" 1>&2
   test "$AFL_KEEP_TRACES" = "" && rm -rf "$TRACE_DIR"
   exit 1
 fi

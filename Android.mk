@@ -141,13 +141,15 @@ include $(BUILD_HOST_EXECUTABLE)
 
 include $(CLEAR_VARS)
 
-LLVM_CONFIG := llvm-config-3.8
+LLVM_CONFIG := llvm-config
 CLANG_CFL := `$(LLVM_CONFIG) --cxxflags` -fno-rtti -fpic -O3 -funroll-loops -Wall -g -Wno-variadic-macros -Wno-unknown-warning-option
 CLANG_LFL := $(LDFLAGS) `$(LLVM_CONFIG) --ldflags` 
-HOST_CLANG_CXX := clang++-3.8
+HOST_CLANG_CXX := clang++
 
 $(info Generating afl-llvm-pass.so)
-$(shell ($(HOST_CLANG_CXX) $(CLANG_CFL) -shared $(LOCAL_PATH)/llvm_mode/afl-llvm-pass.so.cc -o $(HELPER_PATH)/afl-llvm-pass.so $(CLANG_LFL)))
+$(shell mkdir -p $(TARGET_OUT))
+$(shell ($(HOST_CLANG_CXX) $(CLANG_CFL) -shared $(LOCAL_PATH)/llvm_mode/afl-llvm-pass.so.cc -o $(TARGET_OUT)/afl-llvm-pass.so $(CLANG_LFL)))
+
 
 ################################afl-llvm-rt#################################
 
@@ -156,14 +158,14 @@ include $(CLEAR_VARS)
 LOCAL_SRC_FILES := llvm_mode/afl-llvm-rt.o.c
 LOCAL_CLANG := true
 LOCAL_MULTILIB := both
-LOCAL_CC := /usr/bin/clang-3.8
+LOCAL_CC := /usr/bin/clang
 LOCAL_CFLAGS := $(common_CFLAGS)
 LOCAL_MODULE := afl-llvm-rt
 ifeq ($(TARGET_2ND_ARCH),)
-LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(TARGET_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt.o;
+LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(TARGET_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(TARGET_OUT)/afl-llvm-rt.o;
 else
-LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(TARGET_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt-64.o; \
-	cp -f $(TARGET_OUT_INTERMEDIATES)_$(TARGET_2ND_ARCH)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(HELPER_PATH)/afl-llvm-rt.o;
+LOCAL_POST_INSTALL_CMD := $(hide) cp -f $(TARGET_OUT_INTERMEDIATES)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(TARGET_OUT)/afl-llvm-rt-64.o; \
+	cp -f $(TARGET_OUT_INTERMEDIATES)_$(TARGET_2ND_ARCH)/SHARED_LIBRARIES/afl-llvm-rt_intermediates/llvm_mode/afl-llvm-rt.o.o $(TARGET_OUT)/afl-llvm-rt.o;
 endif
 include $(BUILD_SHARED_LIBRARY)
 

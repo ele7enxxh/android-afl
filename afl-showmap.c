@@ -45,9 +45,7 @@
 
 #include <sys/wait.h>
 #include <sys/time.h>
-#ifndef __ANDROID__
-  #include <sys/shm.h>
-#endif
+#include <sys/shm.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/resource.h>
@@ -69,7 +67,9 @@ static s32 shm_id;                    /* ID of the SHM region              */
 
 static u8  quiet_mode,                /* Hide non-essential messages?      */
            edges_only,                /* Ignore hit counts?                */
-           cmin_mode;                 /* Generate output in afl-cmin mode? */
+           cmin_mode,                 /* Generate output in afl-cmin mode? */
+           binary_mode,               /* Write output as a binary map      */
+           keep_cores;                /* Allow coredumps?                  */
 
 static volatile u8
            stop_soon,                 /* Ctrl-C pressed?                   */
@@ -79,7 +79,7 @@ static volatile u8
 /* Classify tuple counts. Instead of mapping to individual bits, as in
    afl-fuzz.c, we map to more user-friendly numbers between 1 and 8. */
 
-static const u8 count_class_lookup[256] = {
+static const u8 count_class_human[256] = {
 
   [0]           = 0,
   [1]           = 1,
@@ -93,7 +93,21 @@ static const u8 count_class_lookup[256] = {
 
 };
 
-static void classify_counts(u8* mem) {
+static const u8 count_class_binary[256] = {
+
+  [0]           = 0,
+  [1]           = 1,
+  [2]           = 2,
+  [3]           = 4,
+  [4 ... 7]     = 8,
+  [8 ... 15]    = 16,
+  [16 ... 31]   = 32,
+  [32 ... 127]  = 64,
+  [128 ... 255] = 128
+
+};
+
+static void classify_counts(u8* mem, const u8* map) {
 
   u32 i = MAP_SIZE;
 
@@ -107,7 +121,7 @@ static void classify_counts(u8* mem) {
   } else {
 
     while (i--) {
-      *mem = count_class_lookup[*mem];
+      *mem = map[*mem];
       mem++;
     }
 
@@ -154,8 +168,8 @@ static void setup_shm(void) {
 static u32 write_results(void) {
 
   s32 fd;
-  FILE* f;
   u32 i, ret = 0;
+
   u8  cco = !!getenv("AFL_CMIN_CRASHES_ONLY"),
       caa = !!getenv("AFL_CMIN_ALLOW_ANY");
 
@@ -177,27 +191,40 @@ static u32 write_results(void) {
 
   }
 
-  f = fdopen(fd, "w");
 
-  if (!f) PFATAL("fdopen() failed");
+  if (binary_mode) {
 
-  for (i = 0; i < MAP_SIZE; i++) {
+    for (i = 0; i < MAP_SIZE; i++)
+      if (trace_bits[i]) ret++;
+    
+    ck_write(fd, trace_bits, MAP_SIZE, out_file);
+    close(fd);
 
-    if (!trace_bits[i]) continue;
-    ret++;
+  } else {
 
-    if (cmin_mode) {
+    FILE* f = fdopen(fd, "w");
 
-      if (child_timed_out) break;
-      if (!caa && child_crashed != cco) break;
+    if (!f) PFATAL("fdopen() failed");
 
-      fprintf(f, "%u%u\n", trace_bits[i], i);
+    for (i = 0; i < MAP_SIZE; i++) {
 
-    } else fprintf(f, "%06u:%u\n", i, trace_bits[i]);
+      if (!trace_bits[i]) continue;
+      ret++;
+
+      if (cmin_mode) {
+
+        if (child_timed_out) break;
+        if (!caa && child_crashed != cco) break;
+
+        fprintf(f, "%u%u\n", trace_bits[i], i);
+
+      } else fprintf(f, "%06u:%u\n", i, trace_bits[i]);
+
+    }
+  
+    fclose(f);
 
   }
-  
-  fclose(f);
 
   return ret;
 
@@ -263,8 +290,12 @@ static void run_target(char** argv) {
 
     }
 
-    r.rlim_max = r.rlim_cur = 0;
+    if (!keep_cores) r.rlim_max = r.rlim_cur = 0;
+    else r.rlim_max = r.rlim_cur = RLIM_INFINITY;
+
     setrlimit(RLIMIT_CORE, &r); /* Ignore errors */
+
+    if (!getenv("LD_BIND_LAZY")) setenv("LD_BIND_NOW", "1", 0);
 
     execv(target_path, argv);
 
@@ -299,7 +330,8 @@ static void run_target(char** argv) {
   if (*(u32*)trace_bits == EXEC_FAIL_SIG)
     FATAL("Unable to execute '%s'", argv[0]);
 
-  classify_counts(trace_bits);
+  classify_counts(trace_bits, binary_mode ?
+                  count_class_binary : count_class_human);
 
   if (!quiet_mode)
     SAYF(cRST "-- Program output ends --\n");
@@ -456,7 +488,8 @@ static void usage(u8* argv0) {
        "Other settings:\n\n"
 
        "  -q            - sink program's output and don't show messages\n"
-       "  -e            - show edge coverage only, ignore hit counts\n\n"
+       "  -e            - show edge coverage only, ignore hit counts\n"
+       "  -c            - allow core dumps\n\n"
 
        "This tool displays raw tuple data captured by AFL instrumentation.\n"
        "For additional help, consult %s/README.\n\n" cRST,
@@ -591,7 +624,7 @@ int main(int argc, char** argv) {
 
   doc_path = access(DOC_PATH, F_OK) ? "docs" : DOC_PATH;
 
-  while ((opt = getopt(argc,argv,"+o:m:t:A:eqZQ")) > 0)
+  while ((opt = getopt(argc,argv,"+o:m:t:A:eqZQbc")) > 0)
 
     switch (opt) {
 
@@ -686,6 +719,20 @@ int main(int argc, char** argv) {
         if (!mem_limit_given) mem_limit = MEM_LIMIT_QEMU;
 
         qemu_mode = 1;
+        break;
+
+      case 'b':
+
+        /* Secret undocumented mode. Writes output in raw binary format
+           similar to that dumped by afl-fuzz in <out_dir/queue/fuzz_bitmap. */
+
+        binary_mode = 1;
+        break;
+
+      case 'c':
+
+        if (keep_cores) FATAL("Multiple -c options not supported");
+        keep_cores = 1;
         break;
 
       default:
